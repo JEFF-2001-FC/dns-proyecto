@@ -1,3 +1,5 @@
+// Cliente de Supabase para Server Components, Server Actions y Route Handlers.
+// Si ya tienes este archivo y exporta `createClient`, conserva el tuyo.
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
@@ -9,13 +11,17 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return cookieStore.getAll(); },
+        getAll() {
+          return cookieStore.getAll();
+        },
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
-          } catch {}
-        }
-      }
-    }
+          } catch {
+            // Llamado desde un Server Component: el proxy refresca la sesión.
+          }
+        },
+      },
+    },
   );
 }
