@@ -7,6 +7,7 @@ import { Bell, Menu, UserRound, X } from "lucide-react";
 import { LogoutButton } from "@/components/shared/logout-button";
 import type { SessionUser } from "@/lib/auth/require-user";
 import { canSee, isActivePath, navForRole, ROLE_LABEL } from "./nav-config";
+import { DnsLogo } from "@/components/shared/dns-logo";
 
 type Props = {
   children: React.ReactNode;
