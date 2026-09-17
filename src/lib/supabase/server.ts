@@ -1,12 +1,11 @@
-// Cliente de Supabase para Server Components, Server Actions y Route Handlers.
-// Si ya tienes este archivo y exporta `createClient`, conserva el tuyo.
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { Database } from "./database.types";
 
 export async function createClient() {
   const cookieStore = await cookies();
 
-  return createServerClient(
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -16,9 +15,11 @@ export async function createClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options),
+            );
           } catch {
-            // Llamado desde un Server Component: el proxy refresca la sesión.
+            // Manejado desde el middleware
           }
         },
       },
