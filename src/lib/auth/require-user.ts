@@ -12,7 +12,7 @@ export const getProfile = cache(async () => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("*")
+    .select("id, email, full_name, role, active")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -26,18 +26,9 @@ export const getProfile = cache(async () => {
 });
 
 export async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
   const profile = await getProfile();
 
-  if (profile?.active === false) {
+  if (!profile || profile.active === false) {
     redirect("/login");
   }
 
