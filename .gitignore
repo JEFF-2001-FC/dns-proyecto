@@ -5,3 +5,10 @@ out
 .env.local
 .vercel
 .DS_Store
+
+# Supabase CLI (datos locales del proyecto vinculado)
+supabase/.temp
+
+# Netlify y TypeScript
+.netlify
+*.tsbuildinfo

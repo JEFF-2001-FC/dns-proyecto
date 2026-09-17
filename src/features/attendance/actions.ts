@@ -94,8 +94,8 @@ export async function registerVisitor(input: ExpressRegisterInput): Promise<Acti
     p_first_name: d.firstName,
     p_last_name: d.lastName,
     p_sex: d.sex,
-    p_phone: d.phone || null,
-    p_guardian: d.guardianPhone ? { phone: d.guardianPhone } : null,
+    p_phone: d.phone || undefined,
+    p_guardian: d.guardianPhone ? { phone: d.guardianPhone } : undefined,
   });
   if (regError || !newId) return { ok: false, message: friendlyError(regError, "No se pudo registrar.") };
 

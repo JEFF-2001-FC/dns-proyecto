@@ -1,12 +1,15 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser, type AppRole, type SessionUser } from "./require-user";
 
-export async function requireRole(role: "admin" | "leader") {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+/**
+ * Exige uno o varios roles. Reutiliza la sesión en caché de requireUser.
+ * Uso: await requireRole("admin")  ·  await requireRole(["admin", "leader"])
+ */
+export async function requireRole(roles: AppRole | AppRole[]): Promise<{ user: SessionUser; profile: SessionUser }> {
+  const user = await requireUser();
+  const allowed = Array.isArray(roles) ? roles : [roles];
 
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (!profile || profile.role !== role) redirect("/inicio");
-  return { user, profile };
+  if (!allowed.includes(user.role)) redirect("/inicio");
+
+  return { user, profile: user };
 }

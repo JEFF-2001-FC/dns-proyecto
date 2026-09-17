@@ -1,143 +1,160 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  Bell,
-  CalendarDays,
-  ClipboardCheck,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  Settings,
-  ShieldAlert,
-  Users,
-  UsersRound,
-  X,
-} from "lucide-react";
-import { signOut } from "@/features/auth/actions";
+import { usePathname } from "next/navigation";
+import { Bell, Menu, UserRound, X } from "lucide-react";
+import { LogoutButton } from "@/components/shared/logout-button";
+import type { SessionUser } from "@/lib/auth/require-user";
+import { isActivePath, navForRole, ROLE_LABEL } from "./nav-config";
 
-const nav = [
-  ["/inicio", "Inicio", LayoutDashboard],
-  ["/adolescentes", "Adolescentes", Users],
-  ["/reuniones", "Reuniones", ClipboardCheck],
-  ["/alertas", "Seguimiento", ShieldAlert],
-  ["/calendario", "Calendario", CalendarDays],
-  ["/eventos", "Eventos", CalendarDays],
-  ["/clanes", "Clanes", UsersRound],
-  ["/reportes", "Reportes", Settings],
-] as const;
-
-export function AppShell({
-  children,
-  userEmail,
-}: {
+type Props = {
   children: React.ReactNode;
-  userEmail: string;
-}) {
+  user: Pick<SessionUser, "email" | "full_name" | "role">;
+  openAlerts: number;
+};
+
+export function AppShell({ children, user, openAlerts }: Props) {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const groups = navForRole(user.role);
+
+  const current = groups.flatMap((g) => g.items).find((i) => isActivePath(pathname, i.href));
+  const displayName = user.full_name || user.email || "Usuario";
+
+  // Cerrar con Escape y bloquear el scroll de fondo mientras el menú móvil está abierto
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setIsOpen(false);
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
 
   const closeMenu = () => setIsOpen(false);
+  const alertsLabel = openAlerts > 99 ? "99+" : String(openAlerts);
 
   return (
     <div className="min-h-screen bg-zinc-50">
-      {/* Overlay oscuro para pantallas móviles al abrir el menú */}
       {isOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-zinc-950/40 backdrop-blur-sm lg:hidden"
-          onClick={closeMenu}
-        />
+        <div aria-hidden className="fixed inset-0 z-40 bg-zinc-950/40 backdrop-blur-sm lg:hidden" onClick={closeMenu} />
       )}
 
-      {/* Sidebar deslizable en móvil / fijo en escritorio */}
+      {/* Sidebar: fijo en escritorio, deslizable en móvil */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-zinc-200 bg-white transition-transform duration-200 ease-in-out lg:translate-x-0 ${
+        id="app-sidebar"
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-zinc-200 bg-white transition-transform duration-200 ease-out lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex h-16 items-center justify-between border-b border-zinc-100 px-5">
-          <div className="flex items-center gap-3">
-            <div className="grid h-9 w-9 place-items-center rounded-xl bg-zinc-950 text-xs font-black text-white">
-              DNS
-            </div>
-            <div>
-              <p className="font-semibold">DNS</p>
-              <p className="text-[11px] text-zinc-500">Ministerio</p>
-            </div>
-          </div>
-          {/* Botón para cerrar menú en móvil */}
-          <button
-            onClick={closeMenu}
-            className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 lg:hidden"
-            aria-label="Cerrar menú"
-          >
+          <Link href="/inicio" onClick={closeMenu} className="flex items-center gap-3">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-zinc-950 text-xs font-black text-white">DNS</span>
+            <span>
+              <span className="block text-sm font-semibold text-zinc-900">Ministerio DNS</span>
+              <span className="block text-[11px] text-zinc-500">Adolescentes</span>
+            </span>
+          </Link>
+          <button onClick={closeMenu} className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 lg:hidden" aria-label="Cerrar menú">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {nav.map(([href, label, Icon]) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={closeMenu}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950"
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </Link>
+        <nav aria-label="Principal" className="flex-1 space-y-5 overflow-y-auto p-3">
+          {groups.map((group) => (
+            <div key={group.title}>
+              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">{group.title}</p>
+              <ul className="space-y-0.5">
+                {group.items.map(({ href, label, icon: Icon, badge }) => {
+                  const active = isActivePath(pathname, href);
+                  return (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        onClick={closeMenu}
+                        aria-current={active ? "page" : undefined}
+                        className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
+                          active ? "bg-zinc-900 font-medium text-white" : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                        <span className="flex-1">{label}</span>
+                        {badge === "alerts" && openAlerts > 0 && (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                              active ? "bg-white text-zinc-900" : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {alertsLabel}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           ))}
+        </nav>
+
+        <div className="space-y-1 border-t border-zinc-100 p-3">
           <Link
             href="/perfil"
             onClick={closeMenu}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950"
+            aria-current={isActivePath(pathname, "/perfil") ? "page" : undefined}
+            className="flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-zinc-100"
           >
-            <Settings className="h-4 w-4" /> Perfil
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-zinc-100 text-zinc-600">
+              <UserRound className="h-4 w-4" aria-hidden />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-medium text-zinc-900">{displayName}</span>
+              <span className="block text-xs text-zinc-500">{ROLE_LABEL[user.role]}</span>
+            </span>
           </Link>
-        </nav>
-
-        <div className="border-t border-zinc-100 p-4">
-          <p className="truncate text-xs text-zinc-500">{userEmail}</p>
-          <form action={signOut} className="mt-3">
-            <button className="flex w-full items-center gap-2 text-sm text-zinc-600 hover:text-zinc-950">
-              <LogOut className="h-4 w-4" /> Cerrar sesión
-            </button>
-          </form>
+          <LogoutButton />
         </div>
       </aside>
 
-      {/* Ámbito principal y header */}
-      <main className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-zinc-200 bg-white/90 px-5 backdrop-blur">
-          <div className="flex items-center gap-3 lg:hidden">
-            {/* Botón hamburguesa exclusivo para móvil */}
-            <button
-              onClick={() => setIsOpen(true)}
-              className="rounded-xl p-2 text-zinc-600 hover:bg-zinc-100"
-              aria-label="Abrir menú"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-            <span className="font-semibold text-zinc-900">DNS</span>
-          </div>
+      <div className="lg:pl-64">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-zinc-200 bg-white/90 px-4 backdrop-blur md:px-8">
+          <button
+            onClick={() => setIsOpen(true)}
+            className="rounded-xl p-2 text-zinc-600 hover:bg-zinc-100 lg:hidden"
+            aria-label="Abrir menú"
+            aria-expanded={isOpen}
+            aria-controls="app-sidebar"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
 
-          <div className="ml-auto flex items-center gap-3">
+          <p className="truncate font-semibold text-zinc-900 lg:hidden">{current?.label ?? "DNS"}</p>
+
+          <div className="ml-auto flex items-center gap-2">
             <Link
               href="/alertas"
-              className="rounded-xl p-2 hover:bg-zinc-100"
-              aria-label="Alertas"
+              className="relative rounded-xl p-2 text-zinc-600 hover:bg-zinc-100"
+              aria-label={openAlerts > 0 ? `Seguimiento: ${openAlerts} alertas abiertas` : "Seguimiento"}
             >
-              <Bell className="h-5 w-5" />
+              <Bell className="h-5 w-5" aria-hidden />
+              {openAlerts > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                  {alertsLabel}
+                </span>
+              )}
             </Link>
             <div className="hidden text-right sm:block">
-              <p className="text-sm font-medium">Ministerio de Adolescentes</p>
-              <p className="text-xs text-zinc-500">{userEmail}</p>
+              <p className="text-sm font-medium text-zinc-900">{displayName}</p>
+              <p className="text-xs text-zinc-500">{ROLE_LABEL[user.role]}</p>
             </div>
           </div>
         </header>
 
-        <div className="mx-auto max-w-7xl p-5 md:p-8">{children}</div>
-      </main>
+        <main className="mx-auto max-w-7xl p-4 md:p-8">{children}</main>
+      </div>
     </div>
   );
 }
