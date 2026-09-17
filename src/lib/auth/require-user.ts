@@ -4,7 +4,9 @@ import { createClient } from "../supabase/server";
 
 export const getProfile = cache(async () => {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { data } = await supabase
@@ -18,6 +20,6 @@ export const getProfile = cache(async () => {
 
 export async function requireUser() {
   const profile = await getProfile();
-  if (!profile || !profile.active) redirect("/auth");
+  if (!profile || !profile.active) redirect("/login");
   return profile;
 }
