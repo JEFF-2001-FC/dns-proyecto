@@ -1,191 +1,218 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Menu, UserRound, X } from "lucide-react";
-import { LogoutButton } from "@/components/shared/logout-button";
-import type { SessionUser } from "@/lib/auth/require-user";
-import { canSee, isActivePath, navForRole, ROLE_LABEL } from "./nav-config";
+import { Bell } from "lucide-react";
 import { DnsLogo } from "@/components/shared/dns-logo";
+import { LogoutButton } from "@/components/shared/logout-button";
+import { RouteProgress } from "@/components/ui/top-progress";
+import { ToastOnMount } from "@/components/ui/toast";
+import { cn } from "@/lib/cn";
+import type { SessionUser } from "@/lib/auth/require-user";
+import { WELCOME_COOKIE } from "@/features/auth/constants";
+import { AccountSheet } from "./account-sheet";
+import {
+  canSee,
+  initials,
+  isActivePath,
+  navForRole,
+  ROLE_LABEL,
+} from "./nav-config";
 
 type Props = {
   children: React.ReactNode;
   user: Pick<SessionUser, "email" | "full_name" | "role">;
+  subtitle?: string;
   openAlerts: number;
+  welcomeName?: string | null;
 };
 
-export function AppShell({ children, user, openAlerts }: Props) {
+export function AppShell({
+  children,
+  user,
+  subtitle,
+  openAlerts,
+  welcomeName,
+}: Props) {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
   const items = navForRole(user.role);
+  const mobileItems = items.filter((i) => i.mobile);
+  const extraItems = items.filter((i) => !i.mobile);
   const showAlerts = canSee(user.role, "/alertas");
 
-  const current = items.find((i) => isActivePath(pathname, i.href));
   const displayName = user.full_name || user.email || "Usuario";
-
-  // Cerrar con Escape y bloquear el scroll de fondo mientras el menú móvil está abierto
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setIsOpen(false);
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
-
-  const closeMenu = () => setIsOpen(false);
+  const account = {
+    name: displayName,
+    email: user.email,
+    subtitle: subtitle ?? ROLE_LABEL[user.role],
+    initials: initials(displayName),
+  };
   const alertsLabel = openAlerts > 99 ? "99+" : String(openAlerts);
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      {isOpen && (
-        <div
-          aria-hidden
-          className="fixed inset-0 z-40 bg-zinc-950/40 backdrop-blur-sm lg:hidden"
-          onClick={closeMenu}
+    <div className="min-h-dvh bg-paper">
+      <RouteProgress />
+      {welcomeName !== undefined && welcomeName !== null && (
+        <ToastOnMount
+          title={welcomeName ? `¡Bienvenido, ${welcomeName}!` : "¡Bienvenido!"}
+          description="Ya puedes empezar."
+          clearCookie={WELCOME_COOKIE}
         />
       )}
 
-      {/* Sidebar: fijo en escritorio, deslizable en móvil */}
-      <aside
-        id="app-sidebar"
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-zinc-200 bg-white transition-transform duration-200 ease-out lg:translate-x-0 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex h-16 items-center justify-between border-b border-zinc-100 px-5">
-          <Link
-            href="/inicio"
-            onClick={closeMenu}
-            className="flex items-center gap-3"
-          >
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-zinc-950 text-xs font-black text-white">
+      {/* ---------- Escritorio: barra lateral oscura ---------- */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col bg-ink px-3.5 py-5 text-white lg:flex">
+        <Link href="/inicio" className="flex items-center gap-3 px-2 pb-6">
+          <DnsLogo className="h-11 w-11 text-white" title={null} />
+          <span>
+            <span className="block font-display text-[26px] font-extrabold leading-none">
               DNS
             </span>
-            <span>
-              <span className="block text-sm font-semibold text-zinc-900">
-                Ministerio DNS
-              </span>
-              <span className="block text-[11px] text-zinc-500">
-                Adolescentes
-              </span>
+            <span className="block text-xs text-[#A8A49C]">
+              Ministerio de Adolescentes
             </span>
-          </Link>
-          <button
-            onClick={closeMenu}
-            className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 lg:hidden"
-            aria-label="Cerrar menú"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+          </span>
+        </Link>
 
-        <nav aria-label="Principal" className="flex-1 overflow-y-auto p-3">
-          <ul className="space-y-0.5">
-            {items.map(({ href, label, icon: Icon, badge }) => {
-              const active = isActivePath(pathname, href);
-              return (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    onClick={closeMenu}
-                    aria-current={active ? "page" : undefined}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
-                      active
-                        ? "bg-zinc-900 font-medium text-white"
-                        : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                    <span className="flex-1">{label}</span>
-                    {badge === "alerts" && openAlerts > 0 && (
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                          active
-                            ? "bg-white text-zinc-900"
-                            : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {alertsLabel}
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        <div className="space-y-1 border-t border-zinc-100 p-3">
-          <Link
-            href="/perfil"
-            onClick={closeMenu}
-            aria-current={
-              isActivePath(pathname, "/perfil") ? "page" : undefined
-            }
-            className="flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-zinc-100"
-          >
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-zinc-100 text-zinc-600">
-              <UserRound className="h-4 w-4" aria-hidden />
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-medium text-zinc-900">
-                {displayName}
-              </span>
-              <span className="block text-xs text-zinc-500">
-                {ROLE_LABEL[user.role]}
-              </span>
-            </span>
-          </Link>
-          <LogoutButton />
-        </div>
-      </aside>
-
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-zinc-200 bg-white/90 px-4 backdrop-blur md:px-8">
-          <button
-            onClick={() => setIsOpen(true)}
-            className="rounded-xl p-2 text-zinc-600 hover:bg-zinc-100 lg:hidden"
-            aria-label="Abrir menú"
-            aria-expanded={isOpen}
-            aria-controls="app-sidebar"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-
-          <p className="truncate font-semibold text-zinc-900 lg:hidden">
-            {current?.label ?? "DNS"}
-          </p>
-
-          <div className="ml-auto flex items-center gap-2">
-            {showAlerts && (
+        <nav aria-label="Principal" className="flex flex-col gap-1">
+          {items.map(({ href, label, icon: Icon, badge }) => {
+            const active = isActivePath(pathname, href);
+            return (
               <Link
-                href="/alertas"
-                className="relative rounded-xl p-2 text-zinc-600 hover:bg-zinc-100"
-                aria-label={
-                  openAlerts > 0 ? `Alertas: ${openAlerts} abiertas` : "Alertas"
-                }
+                key={href}
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex h-11 items-center gap-3 rounded-xl px-3 text-sm transition-colors",
+                  active
+                    ? "bg-white font-semibold text-ink"
+                    : "text-[#D6D3CC] hover:bg-white/10 hover:text-white",
+                )}
               >
-                <Bell className="h-5 w-5" aria-hidden />
-                {openAlerts > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                <Icon className="h-[18px] w-[18px]" aria-hidden />
+                <span className="flex-1">{label}</span>
+                {badge === "alerts" && openAlerts > 0 && (
+                  <span className="grid h-[22px] min-w-[22px] place-items-center rounded-full bg-flame px-1.5 text-xs font-bold text-ink">
                     {alertsLabel}
                   </span>
                 )}
               </Link>
-            )}
-            <div className="hidden text-right sm:block">
-              <p className="text-sm font-medium text-zinc-900">{displayName}</p>
-              <p className="text-xs text-zinc-500">{ROLE_LABEL[user.role]}</p>
-            </div>
-          </div>
-        </header>
+            );
+          })}
+        </nav>
 
-        <main className="mx-auto max-w-7xl p-4 md:p-8">{children}</main>
+        <div className="mt-auto flex flex-col gap-1 border-t border-ink-soft pt-3.5">
+          <Link
+            href="/perfil"
+            className="flex items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-white/10"
+          >
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink-soft text-[13px] font-bold">
+              {account.initials}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold">
+                {displayName}
+              </span>
+              <span className="block truncate text-xs text-[#A8A49C]">
+                {account.subtitle}
+              </span>
+            </span>
+          </Link>
+          <LogoutButton user={account} />
+        </div>
+      </aside>
+
+      {/* ---------- Celular: cabecera oscura ---------- */}
+      <header className="sticky top-0 z-30 flex h-[60px] items-center justify-between bg-ink px-4 pt-[env(safe-area-inset-top)] text-white lg:hidden">
+        <Link href="/inicio" className="flex items-center gap-2.5">
+          <DnsLogo className="h-[34px] w-[34px] text-white" title={null} />
+          <span className="font-display text-[22px] font-extrabold">DNS</span>
+        </Link>
+        <div className="flex items-center gap-2">
+          {showAlerts && (
+            <Link
+              href="/alertas"
+              aria-label={
+                openAlerts > 0 ? `Alertas: ${openAlerts} abiertas` : "Alertas"
+              }
+              className="relative grid h-10 w-10 place-items-center rounded-full hover:bg-white/10"
+            >
+              <Bell className="h-5 w-5" aria-hidden />
+              {openAlerts > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-flame px-1 text-[10px] font-bold text-ink">
+                  {alertsLabel}
+                </span>
+              )}
+            </Link>
+          )}
+          <AccountSheet user={account} extraItems={extraItems} />
+        </div>
+      </header>
+
+      {/* ---------- Escritorio: barra superior ---------- */}
+      <div className="lg:pl-64">
+        <div className="sticky top-0 z-30 hidden h-16 items-center justify-end gap-3 border-b border-line bg-paper/90 px-8 backdrop-blur lg:flex">
+          {showAlerts && (
+            <Link
+              href="/alertas"
+              aria-label={
+                openAlerts > 0 ? `Alertas: ${openAlerts} abiertas` : "Alertas"
+              }
+              className="relative grid h-11 w-11 place-items-center rounded-xl border border-line bg-white hover:bg-paper"
+            >
+              <Bell className="h-5 w-5" aria-hidden />
+              {openAlerts > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-flame-dark px-1 text-[11px] font-bold text-white">
+                  {alertsLabel}
+                </span>
+              )}
+            </Link>
+          )}
+        </div>
+
+        <main className="mx-auto max-w-7xl px-4 pb-28 pt-5 md:px-8 lg:pb-10 lg:pt-7">
+          {children}
+        </main>
       </div>
+
+      {/* ---------- Celular: navegación inferior ---------- */}
+      <nav
+        aria-label="Principal"
+        className="fixed inset-x-0 bottom-0 z-40 grid border-t border-line bg-white px-2 pb-[env(safe-area-inset-bottom)] lg:hidden"
+        style={{
+          gridTemplateColumns: `repeat(${mobileItems.length}, minmax(0, 1fr))`,
+        }}
+      >
+        {mobileItems.map(({ href, label, icon: Icon, badge }) => {
+          const active = isActivePath(pathname, href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex h-[72px] flex-col items-center justify-center gap-1 text-xs",
+                active ? "font-bold text-ink" : "text-muted",
+              )}
+            >
+              <span
+                className={cn(
+                  "relative grid h-[30px] w-[52px] place-items-center rounded-full transition-colors",
+                  active && "bg-ink text-white",
+                )}
+              >
+                <Icon className="h-5 w-5" aria-hidden />
+                {badge === "alerts" && openAlerts > 0 && (
+                  <span className="absolute -top-1 right-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-flame px-1 text-[10px] font-bold text-ink">
+                    {alertsLabel}
+                  </span>
+                )}
+              </span>
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }

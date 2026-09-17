@@ -1,7 +1,7 @@
 import {
   CalendarRange,
   ClipboardCheck,
-  LayoutDashboard,
+  House,
   ShieldAlert,
   UserRoundCheck,
   Users,
@@ -15,6 +15,8 @@ export type NavItem = {
   icon: LucideIcon;
   /** Roles que ven el enlace. Debe coincidir con el requireRole() de la página. */
   roles: AppRole[];
+  /** true = aparece en la barra inferior del celular; false = en el menú "Mi cuenta". */
+  mobile: boolean;
   badge?: "alerts";
 };
 
@@ -22,21 +24,41 @@ const ALL: AppRole[] = ["admin", "leader"];
 const ADMIN: AppRole[] = ["admin"];
 
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/inicio", label: "Inicio", icon: LayoutDashboard, roles: ALL },
+  { href: "/inicio", label: "Inicio", icon: House, roles: ALL, mobile: true },
   {
     href: "/asistencia",
     label: "Asistencia",
     icon: ClipboardCheck,
     roles: ALL,
+    mobile: true,
   },
-  { href: "/adolescentes", label: "Adolescentes", icon: Users, roles: ALL },
-  { href: "/lideres", label: "Líderes", icon: UserRoundCheck, roles: ADMIN },
-  { href: "/eventos", label: "Eventos", icon: CalendarRange, roles: ALL },
+  {
+    href: "/adolescentes",
+    label: "Adolescentes",
+    icon: Users,
+    roles: ALL,
+    mobile: true,
+  },
+  {
+    href: "/lideres",
+    label: "Líderes",
+    icon: UserRoundCheck,
+    roles: ADMIN,
+    mobile: false,
+  },
+  {
+    href: "/eventos",
+    label: "Eventos",
+    icon: CalendarRange,
+    roles: ALL,
+    mobile: true,
+  },
   {
     href: "/alertas",
     label: "Alertas",
     icon: ShieldAlert,
     roles: ADMIN,
+    mobile: true,
     badge: "alerts",
   },
 ];
@@ -56,4 +78,12 @@ export function canSee(role: AppRole, href: string): boolean {
 
 export function isActivePath(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return (
+    (parts[0][0] ?? "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")
+  ).toUpperCase();
 }

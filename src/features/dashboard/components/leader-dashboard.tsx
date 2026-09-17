@@ -1,149 +1,220 @@
 import Link from "next/link";
-import {
-  CalendarRange,
-  ClipboardCheck,
-  Clock,
-  MapPin,
-  Users,
-} from "lucide-react";
+import { ArrowRight, Cake, MapPin } from "lucide-react";
 import { StatCard } from "@/components/shared/stat-card";
-import { fmtDate, fmtDateTime } from "@/lib/format";
+import { Card } from "@/components/ui/card";
+import { fmtDate } from "@/lib/format";
+import { formatTime, weekdayOf, WEEKDAYS } from "@/lib/dates";
 import type { getLeaderDashboard } from "../queries";
+import { EventDate } from "./event-date";
 
 type Data = Awaited<ReturnType<typeof getLeaderDashboard>>;
+
+function Ring({ percent }: { percent: number | null }) {
+  const value = percent ?? 0;
+  const circumference = 2 * Math.PI * 15.5;
+  return (
+    <div className="relative h-[84px] w-[84px] shrink-0">
+      <svg viewBox="0 0 36 36" aria-hidden className="h-full w-full -rotate-90">
+        <circle
+          cx="18"
+          cy="18"
+          r="15.5"
+          fill="none"
+          stroke="#EFECE6"
+          strokeWidth="4"
+        />
+        <circle
+          cx="18"
+          cy="18"
+          r="15.5"
+          fill="none"
+          stroke="#0E0E10"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeDasharray={`${(value / 100) * circumference} ${circumference}`}
+        />
+      </svg>
+      <span className="absolute inset-0 grid place-items-center font-display text-2xl font-bold">
+        {percent !== null ? `${percent}%` : "—"}
+      </span>
+    </div>
+  );
+}
 
 export function LeaderDashboard({ data }: { data: Data }) {
   const greeting = data.leaderName ? `Hola, ${data.leaderName}` : "Hola";
 
   if (data.agapes.length === 0) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-semibold tracking-tight">{greeting}</h1>
-        <div className="rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center">
-          <p className="font-medium">Aún no tienes un ágape asignado</p>
-          <p className="mt-1 text-sm text-zinc-500">
+      <div className="space-y-5">
+        <h1 className="font-display text-4xl font-extrabold leading-none">
+          {greeting}
+        </h1>
+        <Card className="border-dashed p-8 text-center">
+          <p className="font-semibold">Aún no tienes un ágape asignado</p>
+          <p className="mt-1 text-sm text-muted">
             Pide a un administrador que te asigne uno para empezar a tomar
             asistencia.
           </p>
-        </div>
+        </Card>
       </div>
     );
   }
 
-  const firstAgape = data.agapes[0];
+  const agape = data.agapes[0];
+  const isMeetingDay =
+    agape.meetingDay !== null && agape.meetingDay === weekdayOf(data.today);
+  const time = formatTime(agape.meetingTime);
+  const when = isMeetingDay
+    ? ["HOY", agape.name, time].filter(Boolean).join(" · ")
+    : [
+        agape.name,
+        agape.meetingDay !== null
+          ? `reunión los ${WEEKDAYS[agape.meetingDay]}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 lg:space-y-4">
       <div>
-        <p className="text-sm text-zinc-500">{greeting}</p>
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {data.agapes.map((a) => a.name).join(" y ")}
-        </h1>
-        {data.clan && (
-          <p className="mt-2 inline-flex items-center gap-2 text-sm text-zinc-600">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
+          {data.clan && (
             <span
-              aria-hidden
-              className="h-2.5 w-2.5 rounded-full"
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-bold text-white"
               style={{ backgroundColor: data.clan.color }}
-            />
-            Clan {data.clan.name}
-          </p>
-        )}
+            >
+              {data.clan.name}
+            </span>
+          )}
+          {agape.role === "lead" ? "Líder principal" : "Co-líder"}
+        </div>
+        <h1 className="mt-2 font-display text-4xl font-extrabold leading-none sm:text-5xl">
+          {greeting}
+        </h1>
       </div>
 
-      {/* Acción principal */}
       <Link
-        href={`/asistencia?agape=${firstAgape.id}&fecha=${data.today}`}
-        className="flex items-center justify-between gap-4 rounded-2xl bg-zinc-900 p-5 text-white transition-colors hover:bg-zinc-800"
+        href={`/asistencia?agape=${agape.id}&fecha=${data.today}`}
+        className="group flex items-center justify-between gap-3 rounded-[22px] bg-ink p-[18px] text-white transition-colors hover:bg-ink-soft"
       >
-        <div>
-          <p className="text-lg font-semibold">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-bold uppercase tracking-wider text-flame-soft">
+            {when}
+          </p>
+          <p className="mt-1 font-display text-[28px] font-bold leading-tight">
             {data.todayRecorded
               ? "Revisar asistencia de hoy"
               : "Tomar asistencia"}
           </p>
-          <p className="text-sm text-zinc-300">
+          <p className="text-sm text-[#C9C5BD]">
             {data.todayRecorded
-              ? "Ya hay una reunión registrada hoy. Puedes corregirla."
-              : "Registra la reunión de hoy desde tu celular."}
+              ? "Ya registraste hoy; puedes corregirla."
+              : `${data.stats?.members ?? 0} adolescentes en lista`}
           </p>
         </div>
-        <ClipboardCheck className="h-8 w-8 shrink-0" aria-hidden />
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-flame text-ink transition-transform group-hover:translate-x-0.5">
+          <ArrowRight className="h-[22px] w-[22px]" aria-hidden />
+        </span>
       </Link>
 
-      <section className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3">
         <StatCard
-          title="Adolescentes activos"
+          title="Adolescentes"
           value={data.stats?.members ?? 0}
-          icon={Users}
+          hint={
+            data.stats?.newThisMonth ? (
+              <span className="text-[#2F6B3A]">
+                +{data.stats.newThisMonth} este mes
+              </span>
+            ) : undefined
+          }
         />
         <StatCard
-          title="Registros pendientes"
+          title="Por aprobar"
           value={data.stats?.pending ?? 0}
-          icon={Clock}
+          hint={
+            data.stats?.pending ? (
+              <span className="text-[#7A4B00]">Visitantes nuevos</span>
+            ) : (
+              "Todo al día"
+            )
+          }
         />
-      </section>
+      </div>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6">
-          <h2 className="font-semibold">Última reunión</h2>
-          {data.lastMeeting ? (
-            <div className="mt-3">
-              <p className="text-sm text-zinc-500">
-                {fmtDate.format(new Date(`${data.lastMeeting.date}T12:00:00Z`))}
-                {data.agapes.length > 1 && `, ${data.lastMeeting.agapeName}`}
-              </p>
-              <p className="mt-1 font-medium">{data.lastMeeting.topic}</p>
-              <p className="mt-4 text-3xl font-semibold">
-                {data.lastMeeting.percent !== null
-                  ? `${data.lastMeeting.percent}%`
-                  : "—"}
-              </p>
-              <p className="text-sm text-zinc-500">
-                {data.lastMeeting.attended} de {data.lastMeeting.recorded}{" "}
-                asistieron
-              </p>
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-zinc-500">
-              Todavía no hay reuniones registradas.
-            </p>
-          )}
-        </div>
-
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Próximo evento</h2>
-            <Link
-              href="/eventos"
-              className="text-sm text-zinc-600 underline-offset-4 hover:underline"
-            >
-              Ver eventos
-            </Link>
-          </div>
-          {data.nextEvent ? (
-            <div className="mt-3">
-              <p className="inline-flex items-center gap-2 font-medium">
-                <CalendarRange className="h-4 w-4 text-zinc-400" aria-hidden />{" "}
-                {data.nextEvent.title}
-              </p>
-              <p className="mt-1 text-sm text-zinc-500">
-                {fmtDateTime.format(new Date(data.nextEvent.starts_at))}
-              </p>
-              {data.nextEvent.location && (
-                <p className="mt-1 inline-flex items-center gap-1 text-sm text-zinc-500">
-                  <MapPin className="h-3.5 w-3.5" aria-hidden />{" "}
-                  {data.nextEvent.location}
+      <div className="grid gap-3 lg:grid-cols-2">
+        <Card className="flex items-center gap-4 p-4">
+          <Ring percent={data.lastMeeting?.percent ?? null} />
+          <div className="min-w-0">
+            {data.lastMeeting ? (
+              <>
+                <p className="text-sm text-muted">
+                  Última reunión ·{" "}
+                  {fmtDate.format(
+                    new Date(`${data.lastMeeting.date}T17:00:00Z`),
+                  )}
                 </p>
-              )}
-            </div>
+                <p className="mt-0.5 font-bold">
+                  {data.lastMeeting.attended} de {data.lastMeeting.recorded}{" "}
+                  asistieron
+                </p>
+                <p className="truncate text-sm text-muted">
+                  {data.lastMeeting.topic}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-bold">Aún no hay reuniones</p>
+                <p className="text-sm text-muted">
+                  Tu primera asistencia aparecerá aquí.
+                </p>
+              </>
+            )}
+          </div>
+        </Card>
+
+        <Card className="flex items-center gap-3 p-4">
+          {data.nextEvent ? (
+            <>
+              <EventDate
+                iso={data.nextEvent.starts_at}
+                color={data.nextEvent.color}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-muted">Próximo evento</p>
+                <p className="truncate font-bold">{data.nextEvent.title}</p>
+                {data.nextEvent.location && (
+                  <p className="flex items-center gap-1 truncate text-sm text-muted">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    {data.nextEvent.location}
+                  </p>
+                )}
+              </div>
+            </>
           ) : (
-            <p className="mt-3 text-sm text-zinc-500">
-              No hay eventos próximos.
-            </p>
+            <div>
+              <p className="text-sm text-muted">Próximo evento</p>
+              <p className="font-bold">No hay eventos próximos</p>
+            </div>
           )}
+        </Card>
+      </div>
+
+      {data.birthdays.length > 0 && (
+        <div className="flex items-center gap-2.5 rounded-[22px] bg-[#FFF4E8] px-4 py-3 text-sm text-[#6B3A00]">
+          <Cake className="h-5 w-5 shrink-0" aria-hidden />
+          <p>
+            <strong>Cumpleaños este mes:</strong>{" "}
+            {data.birthdays
+              .slice(0, 4)
+              .map((b) => `${b.name} (${b.day})`)
+              .join(", ")}
+            {data.birthdays.length > 4 && ` y ${data.birthdays.length - 4} más`}
+          </p>
         </div>
-      </section>
+      )}
     </div>
   );
 }

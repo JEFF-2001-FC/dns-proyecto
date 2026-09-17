@@ -1,4 +1,7 @@
+import { cookies } from "next/headers";
 import { DnsLogo } from "@/components/shared/dns-logo";
+import { ToastOnMount } from "@/components/ui/toast";
+import { BYE_COOKIE } from "@/features/auth/constants";
 import { LoginForm } from "@/features/auth/components/login-form";
 
 const LOGIN_MESSAGES: Record<string, string> = {
@@ -9,29 +12,57 @@ const LOGIN_MESSAGES: Record<string, string> = {
 
 type Props = { searchParams: Promise<{ error?: string }> };
 
+function readBye(
+  raw: string | undefined,
+): { name: string; email: string } | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { name?: string; email?: string };
+    return { name: parsed.name ?? "", email: parsed.email ?? "" };
+  } catch {
+    return null;
+  }
+}
+
 export default async function LoginPage({ searchParams }: Props) {
-  const { error } = await searchParams;
+  const [{ error }, cookieStore] = await Promise.all([searchParams, cookies()]);
   const notice = error ? LOGIN_MESSAGES[error] : undefined;
+  const bye = readBye(cookieStore.get(BYE_COOKIE)?.value);
 
   return (
-    <main className="grid min-h-screen place-items-center bg-black p-6">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center text-white">
-          <DnsLogo className="mx-auto mb-4 h-32 w-32 text-white sm:h-36 sm:w-36" />
-          <h1 className="text-2xl font-semibold">Ministerio de Adolescentes</h1>
-          <p className="mt-2 text-sm text-zinc-400">Ingresa a tu cuenta</p>
+    <main className="grid min-h-dvh place-items-center bg-black px-5 py-10">
+      {bye && (
+        <ToastOnMount
+          title="Sesión cerrada"
+          description={
+            bye.name
+              ? `¡Hasta pronto, ${bye.name}! Nos vemos pronto.`
+              : "¡Hasta pronto! Nos vemos pronto."
+          }
+        />
+      )}
+
+      <div className="w-full max-w-[400px]">
+        <div className="mb-7 flex flex-col items-center text-center text-white">
+          <DnsLogo className="h-28 w-28 text-white sm:h-32 sm:w-32" />
+          <h1 className="mt-4 font-display text-[34px] font-extrabold leading-none">
+            Ministerio de Adolescentes
+          </h1>
+          <p className="mt-2 text-[15px] text-[#A8A49C]">
+            Ingresa para continuar
+          </p>
         </div>
 
         {notice && (
           <p
             role="alert"
-            className="mb-4 rounded-xl border border-amber-300/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-100"
+            className="mb-4 rounded-2xl border border-amber-300/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-100"
           >
             {notice}
           </p>
         )}
 
-        <LoginForm />
+        <LoginForm defaultEmail={bye?.email ?? ""} />
       </div>
     </main>
   );

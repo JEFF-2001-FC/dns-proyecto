@@ -1,24 +1,94 @@
 "use client";
 
-import { useState } from "react";
-import { login } from "../actions";
+import { useActionState } from "react";
+import { Button } from "@/components/ui/button";
+import { Field, Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { TopProgress } from "@/components/ui/top-progress";
+import { login, type LoginState } from "../actions";
 
-export function LoginForm() {
-  const [error, setError] = useState("");
-  async function action(formData: FormData) {
-    setError("");
-    const result = await login(formData);
-    if (result?.error) setError(result.error);
-  }
+export function LoginForm({ defaultEmail = "" }: { defaultEmail?: string }) {
+  const [state, formAction, pending] = useActionState<LoginState, FormData>(
+    login,
+    {
+      error: null,
+      email: defaultEmail,
+    },
+  );
 
   return (
-    <form action={action} className="rounded-2xl bg-white p-6 shadow-2xl">
-      <label className="block text-sm font-medium">Correo</label>
-      <input name="email" type="email" required className="mt-2 w-full rounded-xl border border-zinc-200 px-4 py-3 outline-none focus:border-zinc-500" placeholder="lider@dns.org" />
-      <label className="mt-5 block text-sm font-medium">Contraseña</label>
-      <input name="password" type="password" required className="mt-2 w-full rounded-xl border border-zinc-200 px-4 py-3 outline-none focus:border-zinc-500" placeholder="••••••••" />
-      {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-      <button className="mt-6 w-full rounded-xl bg-zinc-950 px-4 py-3 font-medium text-white hover:bg-zinc-800">Ingresar</button>
-    </form>
+    <>
+      <TopProgress active={pending} />
+
+      <form
+        action={formAction}
+        aria-busy={pending}
+        className="rounded-[22px] bg-white p-5 sm:p-6"
+      >
+        {/* fieldset deshabilita todos los campos mientras se verifica */}
+        <fieldset disabled={pending} className="flex flex-col gap-4">
+          <Field label="Correo" htmlFor="email">
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              autoFocus={!state.email}
+              required
+              defaultValue={state.email}
+              placeholder="lider@dns.org"
+            />
+          </Field>
+
+          <Field
+            label="Contraseña"
+            htmlFor="password"
+            aside={
+              <a
+                href="/forgot-password"
+                className="text-sm text-muted underline underline-offset-4 hover:text-ink"
+              >
+                ¿La olvidaste?
+              </a>
+            }
+          >
+            <PasswordInput
+              id="password"
+              name="password"
+              autoComplete="current-password"
+              autoFocus={Boolean(state.email)}
+              required
+              placeholder="••••••••"
+            />
+          </Field>
+
+          {state.error && !pending && (
+            <p
+              role="alert"
+              className="rounded-2xl bg-[#FDE8E4] px-4 py-3 text-sm font-medium text-[#9A2A10]"
+            >
+              {state.error}
+            </p>
+          )}
+
+          {/* type="submit": Enter en cualquier campo envía el formulario */}
+          <Button
+            type="submit"
+            size="lg"
+            block
+            loading={pending}
+            loadingText="Ingresando…"
+            className="mt-1"
+          >
+            Ingresar
+          </Button>
+        </fieldset>
+      </form>
+
+      <p aria-live="polite" className="mt-4 text-center text-sm text-subtle">
+        {pending ? "Verificando tu cuenta…" : "Pulsa Enter para ingresar"}
+      </p>
+    </>
   );
 }

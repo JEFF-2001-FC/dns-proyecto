@@ -1,158 +1,261 @@
 import Link from "next/link";
-import {
-  AlertCircle,
-  Clock,
-  Home,
-  UserRoundCheck,
-  UserRoundX,
-  Users,
-} from "lucide-react";
+import { AlertRow } from "./alert-row";
 import { StatCard } from "@/components/shared/stat-card";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { ClanDot } from "@/components/ui/clan-dot";
 import { fmtDateTime } from "@/lib/format";
 import type { getAdminDashboard } from "../queries";
+import { EventDate } from "./event-date";
 
 type Data = Awaited<ReturnType<typeof getAdminDashboard>>;
 
-const SEVERITY: Record<string, { label: string; className: string }> = {
-  critical: { label: "Crítica", className: "bg-red-50 text-red-700" },
-  warning: { label: "Atención", className: "bg-amber-50 text-amber-700" },
-  info: { label: "Aviso", className: "bg-sky-50 text-sky-700" },
-};
-
-export function AdminDashboard({ data }: { data: Data }) {
+export function AdminDashboard({
+  data,
+  greeting,
+  firstName,
+}: {
+  data: Data;
+  greeting: string;
+  firstName: string;
+}) {
   const { totals } = data;
+  const title = firstName ? greeting + ", " + firstName : greeting;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <p className="text-sm text-zinc-500">Panel del ministerio</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Inicio</h1>
+    <div className="space-y-5 lg:space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-display text-[40px] font-extrabold leading-none sm:text-5xl">
+            {title}
+          </h1>
+          <p className="mt-2 text-[15px] text-muted">
+            Así va el ministerio esta semana.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2.5">
+          <Link
+            href="/eventos"
+            className={buttonVariants({ variant: "secondary" })}
+          >
+            Nuevo evento
+          </Link>
+          <Link
+            href="/adolescentes?estado=pendiente"
+            className={buttonVariants({ variant: "primary" })}
+          >
+            Aprobar pendientes
+            {totals.pending > 0 && <Badge tone="flame">{totals.pending}</Badge>}
+          </Link>
+        </div>
       </div>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4 xl:gap-4">
         <StatCard
           title="Adolescentes activos"
           value={totals.adolescents}
-          icon={Users}
+          hint={
+            totals.newThisMonth > 0 ? (
+              <span className="text-[#2F6B3A]">
+                {"+" + totals.newThisMonth + " este mes"}
+              </span>
+            ) : (
+              "Sin altas este mes"
+            )
+          }
         />
+        <StatCard
+          title="Asistencia última semana"
+          value={
+            data.lastWeek.percent !== null ? data.lastWeek.percent + "%" : "—"
+          }
+          hint={
+            data.lastWeek.counted > 0
+              ? data.lastWeek.attended +
+                " de " +
+                data.lastWeek.counted +
+                " registros"
+              : "Sin reuniones registradas"
+          }
+        >
+          <div aria-hidden className="mb-2 hidden h-10 items-end gap-1 sm:flex">
+            {data.weeklyPercents.map((p, i) => (
+              <div
+                key={i}
+                className={
+                  i === data.weeklyPercents.length - 1
+                    ? "w-2 rounded bg-ink"
+                    : "w-2 rounded bg-line-strong"
+                }
+                style={{ height: Math.max(12, p ?? 0) + "%" }}
+              />
+            ))}
+          </div>
+        </StatCard>
         <StatCard
           title="Pendientes de aprobación"
           value={totals.pending}
-          icon={Clock}
-        />
-        <StatCard title="Ágapes activos" value={totals.agapes} icon={Home} />
-        <StatCard
-          title="Líderes activos"
-          value={totals.leaders}
-          icon={UserRoundCheck}
-        />
-        <StatCard
-          title="Líderes sin ágape"
-          value={totals.unassignedLeaders}
-          icon={UserRoundX}
+          hint={
+            <Link
+              href="/adolescentes?estado=pendiente"
+              className="text-ink underline underline-offset-4"
+            >
+              Revisar registros
+            </Link>
+          }
         />
         <StatCard
           title="Alertas activas"
           value={totals.alerts}
-          icon={AlertCircle}
+          tone="dark"
+          hint={
+            totals.criticalAlerts > 0
+              ? totals.criticalAlerts + " críticas por atender"
+              : "Ninguna crítica"
+          }
         />
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-3">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Alertas activas</h2>
-            <Link
-              href="/alertas"
-              className="text-sm text-zinc-600 underline-offset-4 hover:underline"
-            >
-              Ver todas
-            </Link>
-          </div>
-          <div className="mt-4 space-y-3">
-            {data.alerts.length ? (
-              data.alerts.map((a) => {
-                const sev = SEVERITY[a.severity] ?? SEVERITY.info;
-                return (
+      <section className="grid gap-3 lg:grid-cols-3 lg:gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader
+            title="Asistencia por clan"
+            action={
+              <span className="text-sm text-muted">Últimas 4 semanas</span>
+            }
+          />
+          <div className="mt-5 flex flex-col gap-4">
+            {data.clans.map((clan) => (
+              <div key={clan.id} className="flex items-center gap-3.5">
+                <div className="flex w-24 items-center gap-2 text-sm font-semibold">
+                  <ClanDot color={clan.color} />
+                  {clan.name}
+                </div>
+                <div className="h-3 flex-1 rounded-full bg-[#EFECE6]">
                   <div
-                    key={a.id}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-zinc-100 p-4"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{a.name}</p>
-                      <p className="truncate text-xs text-zinc-500">
-                        {a.message}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${sev.className}`}
-                    >
-                      {sev.label}
-                    </span>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-sm text-zinc-500">No hay alertas activas.</p>
-            )}
+                    className="h-3 rounded-full"
+                    style={{
+                      width: (clan.percent ?? 0) + "%",
+                      backgroundColor: clan.color,
+                    }}
+                  />
+                </div>
+                <div className="w-11 text-right text-sm font-bold">
+                  {clan.percent !== null ? clan.percent + "%" : "—"}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        </Card>
+        <Card className="flex flex-col">
+          <CardHeader
+            title="Requieren seguimiento"
+            action={
+              <Link
+                href="/alertas"
+                className="text-sm font-semibold hover:text-flame-dark"
+              >
+                Ver todas
+              </Link>
+            }
+          />
+          <div className="mt-4 flex flex-col gap-3">
+            {data.alerts.length === 0 && (
+              <p className="text-sm text-muted">No hay alertas activas.</p>
+            )}
+            {data.alerts.map((alerta) => (
+              <AlertRow key={alerta.id} alerta={alerta} />
+            ))}
+          </div>
+        </Card>
+      </section>
 
-        <div className="space-y-6">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-6">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold">Control de líderes</h2>
+      <section className="grid gap-3 lg:grid-cols-3 lg:gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader
+            title="Próximos eventos"
+            action={
+              <Link
+                href="/eventos"
+                className="text-sm font-semibold hover:text-flame-dark"
+              >
+                Ver eventos
+              </Link>
+            }
+          />
+          {data.events.length === 0 && (
+            <p className="mt-3 text-sm text-muted">
+              Aún no hay eventos programados.
+            </p>
+          )}
+          {data.events.length > 0 && (
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              {data.events.map((e) => (
+                <div
+                  key={e.id}
+                  className="flex items-center gap-3 rounded-2xl border border-[#EFECE6] p-3"
+                >
+                  <EventDate iso={e.starts_at} color={e.color} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{e.title}</p>
+                    <p className="truncate text-xs text-muted">
+                      {e.location ?? fmtDateTime.format(new Date(e.starts_at))}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="Control de líderes"
+            action={
               <Link
                 href="/lideres"
-                className="text-sm text-zinc-600 underline-offset-4 hover:underline"
+                className="text-sm font-semibold hover:text-flame-dark"
               >
                 Gestionar
               </Link>
-            </div>
-            {data.unassignedLeaders.length ? (
-              <>
-                <p className="mt-1 text-sm text-zinc-500">
-                  Activos sin ágape asignado:
-                </p>
-                <ul className="mt-3 space-y-2 text-sm">
-                  {data.unassignedLeaders.map((l) => (
-                    <li
-                      key={l.id}
-                      className="rounded-lg bg-amber-50 px-3 py-2 text-amber-900"
-                    >
-                      {l.name}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : (
-              <p className="mt-2 text-sm text-zinc-500">
-                Todos los líderes activos tienen un ágape asignado.
+            }
+          />
+          <div className="mt-3 flex gap-6">
+            <div>
+              <p className="font-display text-[32px] font-bold leading-none">
+                {totals.leaders}
               </p>
-            )}
-          </div>
-
-          <div className="rounded-2xl border border-zinc-200 bg-white p-6">
-            <h2 className="font-semibold">Próximos eventos</h2>
-            <div className="mt-4 space-y-3">
-              {data.events.length ? (
-                data.events.map((e) => (
-                  <div
-                    key={e.id}
-                    className="rounded-xl border border-zinc-100 p-3"
-                  >
-                    <p className="font-medium">{e.title}</p>
-                    <p className="text-xs text-zinc-500">
-                      {fmtDateTime.format(new Date(e.starts_at))}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-zinc-500">Aún no hay eventos.</p>
-              )}
+              <p className="text-xs text-muted">activos</p>
+            </div>
+            <div>
+              <p
+                className={
+                  totals.unassignedLeaders > 0
+                    ? "font-display text-[32px] font-bold leading-none text-[#9A2A10]"
+                    : "font-display text-[32px] font-bold leading-none"
+                }
+              >
+                {totals.unassignedLeaders}
+              </p>
+              <p className="text-xs text-muted">sin ágape</p>
             </div>
           </div>
-        </div>
+          {data.unassignedLeaders.length > 0 && (
+            <p className="mt-3 rounded-2xl bg-[#FDF1D8] px-3 py-2.5 text-sm text-[#6B4200]">
+              {"Asigna ágape a " +
+                data.unassignedLeaders.join(", ") +
+                (totals.unassignedLeaders > data.unassignedLeaders.length
+                  ? " y otros."
+                  : ".")}
+            </p>
+          )}
+          {data.unassignedLeaders.length === 0 && (
+            <p className="mt-3 text-sm text-muted">
+              Todos los líderes tienen ágape.
+            </p>
+          )}
+        </Card>
       </section>
     </div>
   );
