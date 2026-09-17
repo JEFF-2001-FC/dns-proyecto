@@ -7,6 +7,7 @@ import {
   UserRoundCheck,
   CalendarDays,
   AlertCircle,
+  Check,
 } from "lucide-react";
 import { LogoutButton } from "@/components/shared/logout-button";
 
@@ -20,6 +21,9 @@ export default async function AppLayout({
   if (!user) {
     redirect("/login");
   }
+
+  // Comprobación de rol
+  const isAdmin = user.role === "admin";
 
   return (
     <div className="flex min-h-screen bg-zinc-50">
@@ -35,6 +39,10 @@ export default async function AppLayout({
                 Ministerio DNS
               </h2>
               <p className="text-xs text-zinc-500 truncate">{user.email}</p>
+              {/* Etiqueta de Rol */}
+              <span className="inline-block mt-1 rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 capitalize">
+                Rol: {user.role}
+              </span>
             </div>
           </div>
 
@@ -45,34 +53,49 @@ export default async function AppLayout({
             >
               <LayoutDashboard className="h-4 w-4" /> Inicio
             </Link>
+
+            <Link
+              href="/asistencia"
+              className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+            >
+              <Check className="h-4 w-4" /> Asistencia
+            </Link>
+
             <Link
               href="/adolescentes"
               className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
             >
               <Users className="h-4 w-4" /> Adolescentes
             </Link>
-            <Link
-              href="/lideres"
-              className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
-            >
-              <UserRoundCheck className="h-4 w-4" /> Líderes
-            </Link>
+
+            {/* Módulos Exclusivos para Administradores */}
+            {isAdmin && (
+              <Link
+                href="/lideres"
+                className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+              >
+                <UserRoundCheck className="h-4 w-4" /> Líderes
+              </Link>
+            )}
+
             <Link
               href="/eventos"
               className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
             >
               <CalendarDays className="h-4 w-4" /> Eventos
             </Link>
-            <Link
-              href="/alertas"
-              className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
-            >
-              <AlertCircle className="h-4 w-4" /> Alertas
-            </Link>
+
+            {isAdmin && (
+              <Link
+                href="/alertas"
+                className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+              >
+                <AlertCircle className="h-4 w-4" /> Alertas
+              </Link>
+            )}
           </nav>
         </div>
 
-        {/* Cierre de sesión al final */}
         <div className="border-t border-zinc-100 pt-4">
           <LogoutButton />
         </div>

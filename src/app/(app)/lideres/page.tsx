@@ -1,4 +1,14 @@
-export default function LideresPage() {
+import { requireUser } from "@/lib/auth/require-user";
+import { redirect } from "next/navigation";
+
+export default async function LideresPage() {
+  const user = await requireUser();
+
+  // Si no es admin, lo rebota a inicio
+  if (user?.role !== "admin") {
+    redirect("/inicio");
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -13,10 +23,10 @@ export default function LideresPage() {
 
       <div className="rounded-2xl border border-dashed border-zinc-200 bg-white p-12 text-center">
         <h3 className="text-base font-semibold text-zinc-900">
-          Módulo preparado
+          Módulo de Administración
         </h3>
         <p className="mt-1 text-sm text-zinc-500">
-          La base de datos y la arquitectura ya contemplan este módulo.
+          Solo visible para usuarios administradores.
         </p>
       </div>
     </div>
