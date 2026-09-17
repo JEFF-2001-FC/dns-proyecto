@@ -1,15 +1,10 @@
 import {
-  BarChart3,
-  CalendarDays,
   CalendarRange,
   ClipboardCheck,
-  ClipboardList,
   LayoutDashboard,
-  Shield,
   ShieldAlert,
   UserRoundCheck,
   Users,
-  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import type { AppRole } from "@/lib/auth/require-user";
@@ -18,43 +13,31 @@ export type NavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
-  roles?: AppRole[]; // sin roles = visible para todos
+  /** Roles que ven el enlace. Debe coincidir con el requireRole() de la página. */
+  roles: AppRole[];
   badge?: "alerts";
 };
 
-export type NavGroup = { title: string; items: NavItem[] };
+const ALL: AppRole[] = ["admin", "leader"];
+const ADMIN: AppRole[] = ["admin"];
 
-export const NAV_GROUPS: NavGroup[] = [
+export const NAV_ITEMS: NavItem[] = [
+  { href: "/inicio", label: "Inicio", icon: LayoutDashboard, roles: ALL },
   {
-    title: "Principal",
-    items: [
-      { href: "/inicio", label: "Inicio", icon: LayoutDashboard },
-      { href: "/asistencia", label: "Asistencia", icon: ClipboardCheck },
-      { href: "/adolescentes", label: "Adolescentes", icon: Users },
-      { href: "/reuniones", label: "Reuniones", icon: ClipboardList },
-      { href: "/alertas", label: "Seguimiento", icon: ShieldAlert, badge: "alerts" },
-    ],
+    href: "/asistencia",
+    label: "Asistencia",
+    icon: ClipboardCheck,
+    roles: ALL,
   },
+  { href: "/adolescentes", label: "Adolescentes", icon: Users, roles: ALL },
+  { href: "/lideres", label: "Líderes", icon: UserRoundCheck, roles: ADMIN },
+  { href: "/eventos", label: "Eventos", icon: CalendarRange, roles: ALL },
   {
-    title: "Agenda",
-    items: [
-      { href: "/eventos", label: "Eventos", icon: CalendarRange },
-      { href: "/calendario", label: "Calendario", icon: CalendarDays },
-    ],
-  },
-  {
-    title: "Ministerio",
-    items: [
-      { href: "/clanes", label: "Clanes", icon: UsersRound },
-      { href: "/reportes", label: "Reportes", icon: BarChart3 },
-    ],
-  },
-  {
-    title: "Administración",
-    items: [
-      { href: "/admin", label: "Panel admin", icon: Shield, roles: ["admin"] },
-      { href: "/lideres", label: "Líderes", icon: UserRoundCheck, roles: ["admin"] },
-    ],
+    href: "/alertas",
+    label: "Alertas",
+    icon: ShieldAlert,
+    roles: ADMIN,
+    badge: "alerts",
   },
 ];
 
@@ -63,10 +46,12 @@ export const ROLE_LABEL: Record<AppRole, string> = {
   leader: "Líder",
 };
 
-export function navForRole(role: AppRole): NavGroup[] {
-  return NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => !i.roles || i.roles.includes(role)) })).filter(
-    (g) => g.items.length > 0,
-  );
+export function navForRole(role: AppRole): NavItem[] {
+  return NAV_ITEMS.filter((item) => item.roles.includes(role));
+}
+
+export function canSee(role: AppRole, href: string): boolean {
+  return navForRole(role).some((item) => item.href === href);
 }
 
 export function isActivePath(pathname: string, href: string): boolean {
