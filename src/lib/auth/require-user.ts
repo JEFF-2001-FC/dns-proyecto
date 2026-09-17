@@ -20,6 +20,10 @@ export const getProfile = cache(async () => {
 
 export async function requireUser() {
   const profile = await getProfile();
-  if (!profile || !profile.active) redirect("/login");
+
+  if (!profile || !profile.active) {
+    redirect("/login");
+  }
+
   return profile;
 }
