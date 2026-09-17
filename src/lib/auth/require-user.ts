@@ -7,21 +7,37 @@ export const getProfile = cache(async () => {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
   if (!user) return null;
 
-  const { data } = await supabase
+  const { data: profile } = await supabase
     .from("profiles")
-    .select("id, email, full_name, role, active")
+    .select("*")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
-  return data;
+  return {
+    id: user.id,
+    email: user.email,
+    role: profile?.role ?? "user",
+    active: profile?.active ?? true,
+    ...profile,
+  };
 });
 
 export async function requireUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
   const profile = await getProfile();
 
-  if (!profile || !profile.active) {
+  if (profile?.active === false) {
     redirect("/login");
   }
 
