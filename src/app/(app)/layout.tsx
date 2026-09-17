@@ -7,8 +7,8 @@ import {
   UserRoundCheck,
   CalendarDays,
   AlertCircle,
-  Menu,
 } from "lucide-react";
+import { LogoutButton } from "@/components/shared/logout-button";
 
 export default async function AppLayout({
   children,
@@ -71,9 +71,14 @@ export default async function AppLayout({
             </Link>
           </nav>
         </div>
+
+        {/* Cierre de sesión al final */}
+        <div className="border-t border-zinc-100 pt-4">
+          <LogoutButton />
+        </div>
       </aside>
 
-      {/* Content & Mobile Bar */}
+      {/* Main Content & Mobile Navbar */}
       <div className="flex-1">
         <header className="flex h-16 items-center justify-between border-b border-zinc-200 bg-white px-4 md:hidden">
           <div className="flex items-center gap-3">
@@ -82,9 +87,9 @@ export default async function AppLayout({
             </div>
             <span className="font-semibold text-zinc-900">DNS App</span>
           </div>
-          <button className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-100">
-            <Menu className="h-6 w-6" />
-          </button>
+          <div className="w-32">
+            <LogoutButton />
+          </div>
         </header>
 
         <main className="p-6 md:p-8">{children}</main>
