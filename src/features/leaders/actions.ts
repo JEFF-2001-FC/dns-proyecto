@@ -67,3 +67,23 @@ export async function createLeader(input: CreateLeaderInput): Promise<CreateLead
   revalidatePath("/lideres");
   return { ok: true, message: `${data.firstName} ya tiene cuenta y acceso a DNS.` };
 }
+
+const agapeSchema = z.string().trim().min(3, "Escribe un nombre de al menos 3 caracteres").max(120);
+
+export async function createAgape(name: string): Promise<{ ok: boolean; message: string }> {
+  await requireRole("admin");
+  const parsed = agapeSchema.safeParse(name);
+  if (!parsed.success) return { ok: false, message: "Escribe un nombre de ágape válido." };
+
+  const admin = createAdminClient();
+  const { error } = await admin.from("agapes").insert({ name: parsed.data, active: true });
+  if (error) {
+    return {
+      ok: false,
+      message: error.code === "23505" ? "Ya existe un ágape con ese nombre." : error.message,
+    };
+  }
+
+  revalidatePath("/lideres");
+  return { ok: true, message: `Ágape “${parsed.data}” creado. Ahora puedes seleccionarlo.` };
+}

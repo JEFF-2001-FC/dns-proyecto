@@ -5,6 +5,7 @@ import { KeyRound, ShieldCheck, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { CreateAgapeButton } from "./create-agape-button";
 import { Select } from "@/components/ui/select";
 import { createLeader } from "../actions";
 
@@ -86,6 +87,7 @@ export function LeaderManager({ agapes, clans }: { agapes: Option[]; clans: Opti
               </div>;
             })}
           </div>
+          <CreateAgapeButton />
           <Field label="Clan" htmlFor="leader-clan" hint="Opcional; es independiente del ágape."><Select id="leader-clan" name="clanId" defaultValue=""><option value="">Sin clan por ahora</option>{clans.map((clan) => <option key={clan.id} value={clan.id}>{clan.name}</option>)}</Select></Field>
         </section>
 
