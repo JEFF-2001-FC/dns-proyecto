@@ -185,8 +185,66 @@ export type Database = {
           },
         ]
       }
+      adolescent_discipleship: {
+        Row: {
+          adolescent_id: string
+          done: boolean
+          done_on: string | null
+          marked_by: string | null
+          step_id: string
+          updated_at: string
+        }
+        Insert: {
+          adolescent_id: string
+          done?: boolean
+          done_on?: string | null
+          marked_by?: string | null
+          step_id: string
+          updated_at?: string
+        }
+        Update: {
+          adolescent_id?: string
+          done?: boolean
+          done_on?: string | null
+          marked_by?: string | null
+          step_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      discipleship_steps: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+          stage: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number
+          stage: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+          sort_order?: number
+          stage?: string
+        }
+        Relationships: []
+      }
       adolescents: {
         Row: {
+          address: string | null
           birth_date: string | null
           created_at: string
           created_by: string | null
@@ -198,12 +256,17 @@ export type Database = {
           rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          district: string | null
+          enrolled: boolean | null
           school_name: string | null
           sex: Database["public"]["Enums"]["sex_type"]
           status: Database["public"]["Enums"]["person_status"]
           updated_at: string
         }
         Insert: {
+          address?: string | null
+          district?: string | null
+          enrolled?: boolean | null
           birth_date?: string | null
           created_at?: string
           created_by?: string | null
@@ -221,6 +284,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address?: string | null
+          district?: string | null
+          enrolled?: boolean | null
           birth_date?: string | null
           created_at?: string
           created_by?: string | null
@@ -654,6 +720,8 @@ export type Database = {
         Row: {
           active: boolean
           color: string
+          color_ink: string
+          color_soft: string
           created_at: string
           description: string | null
           icon: string | null
@@ -665,6 +733,8 @@ export type Database = {
         Insert: {
           active?: boolean
           color: string
+          color_ink?: string
+          color_soft?: string
           created_at?: string
           description?: string | null
           icon?: string | null
@@ -676,6 +746,8 @@ export type Database = {
         Update: {
           active?: boolean
           color?: string
+          color_ink?: string
+          color_soft?: string
           created_at?: string
           description?: string | null
           icon?: string | null
@@ -1530,6 +1602,24 @@ export type Database = {
       }
     }
     Views: {
+      v_my_context: {
+        Row: {
+          agape_id: string | null
+          agape_name: string | null
+          agape_role: Database["public"]["Enums"]["leader_role"] | null
+          clan_color: string | null
+          clan_color_ink: string | null
+          clan_color_soft: string | null
+          clan_id: string | null
+          clan_name: string | null
+          clan_slug: string | null
+          full_name: string | null
+          leader_id: string | null
+          profile_id: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
+        }
+        Relationships: []
+      }
       v_adolescents: {
         Row: {
           agape_id: string | null
@@ -1537,8 +1627,18 @@ export type Database = {
           age: number | null
           birth_date: string | null
           clan_color: string | null
+          clan_color_ink: string | null
+          clan_color_soft: string | null
           clan_id: string | null
           clan_name: string | null
+          address: string | null
+          clan_slug: string | null
+          course_id: string | null
+          course_name: string | null
+          discipleship_done: number | null
+          discipleship_total: number | null
+          district: string | null
+          enrolled: boolean | null
           created_at: string | null
           created_by: string | null
           first_name: string | null
@@ -1670,9 +1770,12 @@ export type Database = {
       refresh_absence_alerts: { Args: never; Returns: number }
       register_adolescent: {
         Args: {
+          p_address?: string
           p_agape_id: string
           p_birth_date?: string
-          p_clan_id: string
+          p_clan_id?: string
+          p_district?: string
+          p_enrolled?: boolean
           p_first_name: string
           p_guardian?: Json
           p_last_name: string
@@ -1681,6 +1784,42 @@ export type Database = {
           p_sex: Database["public"]["Enums"]["sex_type"]
         }
         Returns: string
+      }
+      set_adolescent_clan: {
+        Args: { p_adolescent_id: string; p_clan_id?: string }
+        Returns: undefined
+      }
+      set_adolescent_course: {
+        Args: { p_adolescent_id: string; p_course_id?: string }
+        Returns: undefined
+      }
+      set_adolescent_discipleship: {
+        Args: { p_adolescent_id: string; p_done: boolean; p_step_id: string }
+        Returns: undefined
+      }
+      update_adolescent: {
+        Args: {
+          p_address?: string
+          p_adolescent_id: string
+          p_birth_date?: string
+          p_district?: string
+          p_enrolled?: boolean
+          p_first_name: string
+          p_last_name: string
+          p_phone?: string
+          p_school_name?: string
+          p_sex: Database["public"]["Enums"]["sex_type"]
+        }
+        Returns: undefined
+      }
+      update_my_profile: {
+        Args: {
+          p_birth_date?: string
+          p_full_name: string
+          p_phone?: string
+          p_sex?: Database["public"]["Enums"]["sex_type"]
+        }
+        Returns: undefined
       }
       review_adolescent: {
         Args: { p_adolescent_id: string; p_approve: boolean; p_reason?: string }
