@@ -2,6 +2,8 @@ import {
   CalendarRange,
   ClipboardCheck,
   HeartHandshake,
+  Bell,
+  History,
   ListChecks,
   FolderDown,
   ChartNoAxesCombined,
@@ -73,7 +75,9 @@ export const NAV_ITEMS: NavItem[] = [
     mobile: false,
   },
   { href: "/materiales", label: "Materiales", icon: FolderDown, roles: ALL, mobile: false },
+  { href: "/notificaciones", label: "Notificaciones", icon: Bell, roles: ALL, mobile: false },
   { href: "/reportes", label: "Reportes", icon: ChartNoAxesCombined, roles: ADMIN, mobile: false },
+  { href: "/auditoria", label: "Auditoría", icon: History, roles: ADMIN, mobile: false },
   {
     href: "/conexion",
     label: "Conexión",

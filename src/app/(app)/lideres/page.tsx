@@ -30,7 +30,10 @@ export default async function LideresPage() {
   const list = leaders ?? [];
   const profileIds = list.flatMap((leader) => leader.profile_id ? [leader.profile_id] : []);
   const { data: profiles } = profileIds.length ? await supabase.from("profiles").select("id, active").in("id", profileIds) : { data: [] as { id: string; active: boolean }[] };
+  const { data: activity } = profileIds.length ? await supabase.from("audit_log").select("actor_id, created_at").in("actor_id", profileIds).order("created_at", { ascending: false }).limit(500) : { data: [] as { actor_id: string | null; created_at: string }[] };
   const accountActive = new Map((profiles ?? []).map((profile) => [profile.id, profile.active]));
+  const lastActivity = new Map<string, string>();
+  for (const row of activity ?? []) if (row.actor_id && !lastActivity.has(row.actor_id)) lastActivity.set(row.actor_id, row.created_at);
   const sinCorreo = list.filter((l) => !l.email?.trim()).length;
   const sinCuenta = list.filter((l) => l.email?.trim() && !l.profile_id).length;
 
@@ -96,6 +99,7 @@ export default async function LideresPage() {
                     <p className="truncate text-sm text-muted">
                       {l.email || l.phone || "Sin contacto registrado"}
                     </p>
+                    <p className="mt-0.5 text-xs text-subtle">{l.profile_id && lastActivity.get(l.profile_id) ? `Última actividad: ${new Intl.DateTimeFormat("es-PE", { dateStyle: "medium", timeStyle: "short" }).format(new Date(lastActivity.get(l.profile_id)!))}` : "Aún no registra actividad"}</p>
                   </div>
                 </div>
 

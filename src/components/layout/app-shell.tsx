@@ -24,6 +24,7 @@ type Props = {
   user: Pick<SessionUser, "email" | "full_name" | "role">;
   subtitle?: string;
   openAlerts: number;
+  unreadNotifications: number;
   welcomeName?: string | null;
 };
 
@@ -32,6 +33,7 @@ export function AppShell({
   user,
   subtitle,
   openAlerts,
+  unreadNotifications,
   welcomeName,
 }: Props) {
   const pathname = usePathname();
@@ -48,6 +50,7 @@ export function AppShell({
     initials: initials(displayName),
   };
   const alertsLabel = openAlerts > 99 ? "99+" : String(openAlerts);
+  const notificationLabel = unreadNotifications > 99 ? "99+" : String(unreadNotifications);
 
   return (
     <div className="min-h-dvh bg-paper">
@@ -129,22 +132,22 @@ export function AppShell({
           <span className="font-display text-[22px] font-extrabold">DNS</span>
         </Link>
         <div className="flex items-center gap-2">
-          {showAlerts && (
+          {
             <Link
-              href="/alertas"
+              href="/notificaciones"
               aria-label={
-                openAlerts > 0 ? `Alertas: ${openAlerts} abiertas` : "Alertas"
+                unreadNotifications > 0 ? `Notificaciones: ${unreadNotifications} sin leer` : "Notificaciones"
               }
               className="relative grid h-10 w-10 place-items-center rounded-full hover:bg-white/10"
             >
               <Bell className="h-5 w-5" aria-hidden />
-              {openAlerts > 0 && (
+              {unreadNotifications > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-flame px-1 text-[10px] font-bold text-ink">
-                  {alertsLabel}
+                  {notificationLabel}
                 </span>
               )}
             </Link>
-          )}
+          }
           <AccountSheet user={account} extraItems={extraItems} />
         </div>
       </header>
@@ -152,22 +155,22 @@ export function AppShell({
       {/* ---------- Escritorio: barra superior ---------- */}
       <div className="lg:pl-64">
         <div className="sticky top-0 z-30 hidden h-16 items-center justify-end gap-3 border-b border-line bg-paper/90 px-8 backdrop-blur lg:flex">
-          {showAlerts && (
+          {
             <Link
-              href="/alertas"
+              href="/notificaciones"
               aria-label={
-                openAlerts > 0 ? `Alertas: ${openAlerts} abiertas` : "Alertas"
+                unreadNotifications > 0 ? `Notificaciones: ${unreadNotifications} sin leer` : "Notificaciones"
               }
               className="relative grid h-11 w-11 place-items-center rounded-xl border border-line bg-white hover:bg-paper"
             >
               <Bell className="h-5 w-5" aria-hidden />
-              {openAlerts > 0 && (
+              {unreadNotifications > 0 && (
                 <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-flame-dark px-1 text-[11px] font-bold text-white">
-                  {alertsLabel}
+                  {notificationLabel}
                 </span>
               )}
             </Link>
-          )}
+          }
         </div>
 
         <main className="mx-auto max-w-7xl px-4 pb-28 pt-5 md:px-8 lg:pb-10 lg:pt-7">

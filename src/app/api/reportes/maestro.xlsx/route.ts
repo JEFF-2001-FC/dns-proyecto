@@ -11,17 +11,23 @@ function addSheet(book: XLSX.WorkBook, name: string, rows: Record<string, unknow
   XLSX.utils.book_append_sheet(book, sheet, name);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const profile = await getProfile();
   if (!profile || profile.role !== "admin") return new NextResponse("No autorizado", { status: 403 });
 
+  const params = new URL(request.url).searchParams; const agapeId = params.get("agape") ?? ""; const from = params.get("from") ?? ""; const to = params.get("to") ?? "";
   const supabase = await createClient();
+  let adolescentQuery = supabase.from("v_adolescents").select("id, full_name, status, age, birth_date, phone, guardian_name, guardian_phone, school_name, agape_name, clan_name, created_at").order("full_name");
+  let meetingQuery = supabase.from("meetings").select("id, agape_id, meeting_type_id, meeting_date, topic, description, created_at").order("meeting_date", { ascending: false });
+  let eventQuery = supabase.from("events").select("title, starts_at, ends_at, scope, approval_status, location, description, created_at, agape_id").order("starts_at", { ascending: false });
+  let followupQuery = supabase.from("connection_followups").select("adolescent_id, status, occurred_on, availability, notes, next_contact_on, suggested_agape_id, created_at").order("occurred_on", { ascending: false });
+  if (agapeId) { adolescentQuery = adolescentQuery.eq("agape_id", agapeId); meetingQuery = meetingQuery.eq("agape_id", agapeId); eventQuery = eventQuery.or(`scope.eq.general,agape_id.eq.${agapeId}`); }
+  if (from) { meetingQuery = meetingQuery.gte("meeting_date", from); eventQuery = eventQuery.gte("starts_at", `${from}T00:00:00Z`); followupQuery = followupQuery.gte("occurred_on", from); }
+  if (to) { meetingQuery = meetingQuery.lte("meeting_date", to); eventQuery = eventQuery.lte("starts_at", `${to}T23:59:59Z`); followupQuery = followupQuery.lte("occurred_on", to); }
   const [adolescents, meetings, attendance, eventRows, followups, agapes, meetingTypes] = await Promise.all([
-    supabase.from("v_adolescents").select("id, full_name, status, age, birth_date, phone, guardian_name, guardian_phone, school_name, agape_name, clan_name, created_at").order("full_name"),
-    supabase.from("meetings").select("id, agape_id, meeting_type_id, meeting_date, topic, description, created_at").order("meeting_date", { ascending: false }),
+    adolescentQuery, meetingQuery,
     supabase.from("attendance").select("adolescent_id, meeting_id, status, notes, recorded_at").order("recorded_at", { ascending: false }),
-    supabase.from("events").select("title, starts_at, ends_at, scope, approval_status, location, description, created_at").order("starts_at", { ascending: false }),
-    supabase.from("connection_followups").select("adolescent_id, status, occurred_on, availability, notes, next_contact_on, suggested_agape_id, created_at").order("occurred_on", { ascending: false }),
+    eventQuery, followupQuery,
     supabase.from("agapes").select("id, name"),
     supabase.from("meeting_types").select("id, name"),
   ]);

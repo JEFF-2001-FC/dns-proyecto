@@ -20,6 +20,7 @@ export default async function AppLayout({
 
   // Solo el admin ve Alertas; al líder se le muestra su ágape bajo el nombre
   let openAlerts = 0;
+  let unreadNotifications = 0;
   let subtitle: string | undefined;
 
   if (user.role === "admin") {
@@ -40,12 +41,15 @@ export default async function AppLayout({
       ?.name;
     subtitle = agape ? `Líder · ${agape}` : "Líder";
   }
+  const { count: unreadCount } = await supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", user.id).is("read_at", null);
+  unreadNotifications = unreadCount ?? 0;
 
   return (
     <AppShell
       user={{ email: user.email, full_name: user.full_name, role: user.role }}
       subtitle={subtitle}
       openAlerts={openAlerts}
+      unreadNotifications={unreadNotifications}
       welcomeName={welcomeName}
     >
       {children}
