@@ -6,6 +6,8 @@ import { initials } from "@/components/layout/nav-config";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
 import { LeaderManager } from "@/features/leaders/components/leader-manager";
+import { ConnectionAccessToggle } from "@/features/leaders/components/connection-access-toggle";
+import { LeaderAccountToggle } from "@/features/leaders/components/leader-account-toggle";
 
 export const metadata = { title: "Líderes · DNS" };
 
@@ -18,7 +20,7 @@ export default async function LideresPage() {
   const { data: leaders } = await supabase
     .from("leaders")
     .select(
-      "id, first_name, last_name, phone, email, status, profile_id, leader_agape_assignments(agape_id, role, ended_on, agapes(name)), leader_clan_memberships(clan_id, ended_on, clans(name, slug, color, color_soft, color_ink))",
+      "id, first_name, last_name, phone, email, status, profile_id, connection_enabled, leader_agape_assignments(agape_id, role, ended_on, agapes(name)), leader_clan_memberships(clan_id, ended_on, clans(name, slug, color, color_soft, color_ink))",
     )
     .order("last_name");
 
@@ -26,6 +28,9 @@ export default async function LideresPage() {
   const { data: clans } = await supabase.from("clans").select("id, name").eq("active", true).order("sort_order");
 
   const list = leaders ?? [];
+  const profileIds = list.flatMap((leader) => leader.profile_id ? [leader.profile_id] : []);
+  const { data: profiles } = profileIds.length ? await supabase.from("profiles").select("id, active").in("id", profileIds) : { data: [] as { id: string; active: boolean }[] };
+  const accountActive = new Map((profiles ?? []).map((profile) => [profile.id, profile.active]));
   const sinCorreo = list.filter((l) => !l.email?.trim()).length;
   const sinCuenta = list.filter((l) => l.email?.trim() && !l.profile_id).length;
 
@@ -124,6 +129,9 @@ export default async function LideresPage() {
                     <span className="rounded-lg bg-[#FDE8E4] px-2 py-0.5 text-xs font-bold text-[#9A2A10]">
                       Sin cuenta
                     </span>
+                  )}
+                  {l.profile_id && (
+                    <><LeaderAccountToggle leaderId={l.id} enabled={accountActive.get(l.profile_id) ?? false} /><ConnectionAccessToggle leaderId={l.id} enabled={l.connection_enabled} /></>
                   )}
                 </div>
               </li>

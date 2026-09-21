@@ -1,15 +1,5 @@
-export default function Page() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm text-zinc-500">DNS</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Calendario</h1>
-        <p className="mt-2 text-zinc-500">Todos los eventos del ministerio en un solo lugar.</p>
-      </div>
-      <div className="rounded-2xl border border-dashed border-zinc-300 bg-white p-10 text-center">
-        <p className="font-medium">Módulo preparado</p>
-        <p className="mt-1 text-sm text-zinc-500">La base de datos y la arquitectura ya contemplan este dominio.</p>
-      </div>
-    </div>
-  );
-}
+import { PageHeader } from "@/components/shared/page-header";
+import { requireUser } from "@/lib/auth/require-user";
+import { createClient } from "@/lib/supabase/server";
+export const metadata = { title: "Calendario · DNS" };
+export default async function CalendarioPage() { await requireUser(); const supabase = await createClient(); const { data } = await supabase.from("events").select("id, title, starts_at, ends_at, location, description, scope, agape:agapes(name), clan:clans(name)").eq("approval_status", "published").order("starts_at").limit(100); const events = data ?? []; return <div className="space-y-6"><PageHeader eyebrow="Ministerio" title="Calendario" description="Haz clic en un evento para ver todos sus detalles." /><section className="rounded-3xl border border-line bg-white">{events.length === 0 ? <p className="p-6 text-sm text-muted">No hay eventos próximos.</p> : <ul className="divide-y divide-line">{events.map((event) => <li key={event.id}><details className="group p-4"><summary className="cursor-pointer list-none"><p className="font-bold">{event.title}</p><p className="mt-1 text-sm text-muted">{new Intl.DateTimeFormat("es-PE", { dateStyle: "full", timeStyle: "short" }).format(new Date(event.starts_at))}{event.location ? ` · ${event.location}` : ""}</p><p className="mt-1 text-xs text-subtle">{event.scope === "general" ? "Todo el ministerio" : event.agape?.name ?? event.clan?.name} · <span className="group-open:hidden">Ver detalles</span><span className="hidden group-open:inline">Ocultar detalles</span></p></summary><div className="mt-4 rounded-2xl bg-paper p-3 text-sm text-muted"><p>{event.description || "No se agregó una descripción para este evento."}</p>{event.ends_at && <p className="mt-2">Finaliza: {new Intl.DateTimeFormat("es-PE", { dateStyle: "full", timeStyle: "short" }).format(new Date(event.ends_at))}</p>}<p className="mt-2 text-xs">Los recursos adjuntos aparecerán aquí cuando se publiquen.</p></div></details></li>)}</ul>}</section></div>; }

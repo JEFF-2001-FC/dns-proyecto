@@ -1,6 +1,10 @@
 import {
   CalendarRange,
   ClipboardCheck,
+  HeartHandshake,
+  ListChecks,
+  FolderDown,
+  ChartNoAxesCombined,
   House,
   ShieldAlert,
   UserRoundCheck,
@@ -60,6 +64,22 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ADMIN,
     mobile: true,
     badge: "alerts",
+  },
+  {
+    href: "/reuniones",
+    label: "Reuniones",
+    icon: ListChecks,
+    roles: ALL,
+    mobile: false,
+  },
+  { href: "/materiales", label: "Materiales", icon: FolderDown, roles: ALL, mobile: false },
+  { href: "/reportes", label: "Reportes", icon: ChartNoAxesCombined, roles: ADMIN, mobile: false },
+  {
+    href: "/conexion",
+    label: "Conexión",
+    icon: HeartHandshake,
+    roles: ADMIN,
+    mobile: false,
   },
 ];
 

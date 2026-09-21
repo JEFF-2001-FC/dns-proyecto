@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Cake, MapPin } from "lucide-react";
+import { ArrowRight, Cake, HeartHandshake, MapPin } from "lucide-react";
 import { StatCard } from "@/components/shared/stat-card";
 import { Card } from "@/components/ui/card";
 import { fmtDate } from "@/lib/format";
@@ -143,6 +143,30 @@ export function LeaderDashboard({ data }: { data: Data }) {
           }
         />
       </div>
+
+      <Link
+        href={data.connectionEnabled ? "/conexion" : "/inicio"}
+        aria-disabled={!data.connectionEnabled}
+        tabIndex={data.connectionEnabled ? undefined : -1}
+        className={`flex items-center justify-between rounded-[22px] border p-4 ${
+          data.connectionEnabled
+            ? "border-[#B8DEC0] bg-[#EAF7EC] text-[#1E6B32] hover:bg-[#E3F4E6]"
+            : "cursor-not-allowed border-line bg-paper text-muted"
+        }`}
+      >
+        <span className="flex items-center gap-3">
+          <span className={`grid h-10 w-10 place-items-center rounded-xl ${data.connectionEnabled ? "bg-[#2E7D32] text-white" : "bg-line text-muted"}`}>
+            <HeartHandshake className="h-5 w-5" aria-hidden />
+          </span>
+          <span>
+            <span className="block font-bold">Conexión</span>
+            <span className="block text-sm">{data.connectionEnabled ? "Activa: registrar seguimientos" : "No tienes este acceso"}</span>
+          </span>
+        </span>
+        <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${data.connectionEnabled ? "bg-white/80" : "bg-white"}`}>
+          {data.connectionEnabled ? "Activa" : "Inactiva"}
+        </span>
+      </Link>
 
       <div className="grid gap-3 lg:grid-cols-2">
         <Card className="flex items-center gap-4 p-4">

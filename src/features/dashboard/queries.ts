@@ -211,7 +211,7 @@ export async function getLeaderDashboard(profileId: string) {
   const { data: leader } = await supabase
     .from("leaders")
     .select(
-      `id, first_name,
+      `id, first_name, connection_enabled,
        assignments:leader_agape_assignments(role, ended_on, agape:agapes(id, name, meeting_day, meeting_time)),
        clans:leader_clan_memberships(ended_on, clan:clans(name, color))`,
     )
@@ -231,7 +231,13 @@ export async function getLeaderDashboard(profileId: string) {
     (leader?.clans ?? []).find((c) => c.ended_on === null)?.clan ?? null;
   const agapeIds = agapes.map((a) => a.id);
 
-  const base = { leaderName: leader?.first_name ?? null, agapes, clan, today };
+  const base = {
+    leaderName: leader?.first_name ?? null,
+    agapes,
+    clan,
+    today,
+    connectionEnabled: leader?.connection_enabled ?? false,
+  };
 
   if (agapeIds.length === 0) {
     return {

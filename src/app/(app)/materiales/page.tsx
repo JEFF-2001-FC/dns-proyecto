@@ -1,0 +1,18 @@
+import { Download, ExternalLink, FileText, Upload } from "lucide-react";
+import { PageHeader } from "@/components/shared/page-header";
+import { requireUser } from "@/lib/auth/require-user";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { uploadMaterial } from "@/features/materials/actions";
+
+export const metadata = { title: "Materiales · DNS" };
+export default async function MaterialesPage() {
+  const user = await requireUser(); const supabase = await createClient();
+  const { data } = await supabase.from("materials").select("id, title, description, kind, external_url, body, storage_path, file_name, size_bytes, created_at").order("created_at", { ascending: false });
+  const admin = createAdminClient();
+  const items = await Promise.all((data ?? []).map(async (item) => {
+    const signed = item.storage_path ? await admin.storage.from("dns-materials").createSignedUrl(item.storage_path, 900) : null;
+    return { ...item, url: signed?.data?.signedUrl ?? null };
+  }));
+  return <div className="space-y-6"><PageHeader eyebrow="Recursos" title="Materiales" description="PDF, enlaces y notas compartidas por administración." />{user.role === "admin" && <form action={uploadMaterial} className="space-y-3 rounded-3xl border border-line bg-white p-5"><h2 className="flex items-center gap-2 font-display text-xl font-bold"><Upload className="h-5 w-5" />Publicar recurso</h2><div className="grid gap-3 sm:grid-cols-2"><input name="title" required placeholder="Título" className="rounded-xl border border-line px-3 py-2 text-sm" /><select name="kind" defaultValue="file" className="rounded-xl border border-line px-3 py-2 text-sm"><option value="file">Archivo PDF</option><option value="link">Enlace externo (Drive, etc.)</option><option value="note">Nota / instrucciones</option></select></div><input name="file" type="file" accept="application/pdf" className="w-full rounded-xl border border-line px-3 py-2 text-sm" /><input name="externalUrl" type="url" placeholder="https://drive.google.com/... (solo si es enlace)" className="w-full rounded-xl border border-line px-3 py-2 text-sm" /><textarea name="body" rows={3} placeholder="Contenido de la nota o instrucciones" className="w-full rounded-xl border border-line px-3 py-2 text-sm" /><textarea name="description" rows={2} placeholder="Descripción opcional" className="w-full rounded-xl border border-line px-3 py-2 text-sm" /><button className="rounded-2xl bg-ink px-4 py-2.5 text-sm font-semibold text-white">Publicar recurso</button></form>}<section className="overflow-hidden rounded-3xl border border-line bg-white">{items.length === 0 ? <p className="p-6 text-sm text-muted">Aún no hay materiales publicados.</p> : <ul className="divide-y divide-line">{items.map((item) => <li key={item.id} className="flex items-center justify-between gap-3 p-4"><div className="flex min-w-0 gap-3"><FileText className="h-7 w-7 shrink-0 text-danger" /><div><p className="font-bold">{item.title}</p><p className="text-sm text-muted">{item.description || item.body || item.file_name || "Enlace compartido"}</p></div></div>{item.url && <a href={item.url} className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-line px-3 py-2 text-sm font-semibold"><Download className="h-4 w-4" />Descargar</a>}{item.external_url && <a href={item.external_url} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-line px-3 py-2 text-sm font-semibold"><ExternalLink className="h-4 w-4" />Abrir enlace</a>}</li>)}</ul>}</section></div>;
+}

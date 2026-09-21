@@ -87,3 +87,41 @@ export async function createAgape(name: string): Promise<{ ok: boolean; message:
   revalidatePath("/lideres");
   return { ok: true, message: `Ágape “${parsed.data}” creado. Ahora puedes seleccionarlo.` };
 }
+
+export async function setLeaderConnectionAccess(
+  leaderId: string,
+  enabled: boolean,
+): Promise<{ ok: boolean; message: string }> {
+  await requireRole("admin");
+  if (!z.uuid().safeParse(leaderId).success) {
+    return { ok: false, message: "Líder no válido." };
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("leaders")
+    .update({ connection_enabled: enabled })
+    .eq("id", leaderId);
+
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/lideres");
+  revalidatePath("/inicio");
+  revalidatePath("/conexion");
+  return { ok: true, message: enabled ? "Acceso a Conexión activado." : "Acceso a Conexión desactivado." };
+}
+
+/** Activa o bloquea el acceso completo de un líder a DNS. */
+export async function setLeaderAccountAccess(leaderId: string, enabled: boolean): Promise<{ ok: boolean; message: string }> {
+  await requireRole("admin");
+  if (!z.uuid().safeParse(leaderId).success) return { ok: false, message: "Líder no válido." };
+  const admin = createAdminClient();
+  const { data: leader, error: leaderError } = await admin.from("leaders").select("profile_id").eq("id", leaderId).maybeSingle();
+  if (leaderError || !leader?.profile_id) return { ok: false, message: "Este líder aún no tiene una cuenta vinculada." };
+  const { error: profileError } = await admin.from("profiles").update({ active: enabled }).eq("id", leader.profile_id);
+  if (profileError) return { ok: false, message: profileError.message };
+  const { error: statusError } = await admin.from("leaders").update({ status: enabled ? "active" : "inactive" }).eq("id", leaderId);
+  if (statusError) return { ok: false, message: statusError.message };
+  revalidatePath("/lideres");
+  revalidatePath("/inicio");
+  return { ok: true, message: enabled ? "Cuenta reactivada." : "Cuenta inhabilitada. Ya no podrá entrar a DNS." };
+}

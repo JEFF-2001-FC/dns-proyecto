@@ -14,6 +14,129 @@ export type Database = {
   }
   public: {
     Tables: {
+      adolescent_life_events: {
+        Row: {
+          adolescent_id: string
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          occurred_on: string
+        }
+        Insert: {
+          adolescent_id: string
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          occurred_on?: string
+        }
+        Update: {
+          adolescent_id?: string
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          occurred_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adolescent_life_events_adolescent_id_fkey"
+            columns: ["adolescent_id"]
+            isOneToOne: false
+            referencedRelation: "adolescents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adolescent_life_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      adolescent_life_profiles: {
+        Row: {
+          academic_difficulties: string | null
+          adolescent_id: string
+          birth_place: string | null
+          church_name: string | null
+          district: string | null
+          doctor_notes: string | null
+          education_situation: string | null
+          family_context: string | null
+          father_name: string | null
+          father_occupation: string | null
+          guardian_consent: boolean
+          health_conditions: string | null
+          hobbies: string | null
+          medications: string | null
+          mother_name: string | null
+          mother_occupation: string | null
+          sibling_count: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          academic_difficulties?: string | null
+          adolescent_id: string
+          birth_place?: string | null
+          church_name?: string | null
+          district?: string | null
+          doctor_notes?: string | null
+          education_situation?: string | null
+          family_context?: string | null
+          father_name?: string | null
+          father_occupation?: string | null
+          guardian_consent?: boolean
+          health_conditions?: string | null
+          hobbies?: string | null
+          medications?: string | null
+          mother_name?: string | null
+          mother_occupation?: string | null
+          sibling_count?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          academic_difficulties?: string | null
+          adolescent_id?: string
+          birth_place?: string | null
+          church_name?: string | null
+          district?: string | null
+          doctor_notes?: string | null
+          education_situation?: string | null
+          family_context?: string | null
+          father_name?: string | null
+          father_occupation?: string | null
+          guardian_consent?: boolean
+          health_conditions?: string | null
+          hobbies?: string | null
+          medications?: string | null
+          mother_name?: string | null
+          mother_occupation?: string | null
+          sibling_count?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adolescent_life_profiles_adolescent_id_fkey"
+            columns: ["adolescent_id"]
+            isOneToOne: true
+            referencedRelation: "adolescents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adolescent_life_profiles_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       adolescent_agape_memberships: {
         Row: {
           adolescent_id: string
@@ -859,6 +982,7 @@ export type Database = {
       }
       events: {
         Row: {
+          approval_status: Database["public"]["Enums"]["event_approval_status"]
           agape_id: string | null
           capacity: number | null
           clan_id: string | null
@@ -872,6 +996,9 @@ export type Database = {
           location: string | null
           period_id: string | null
           registration_deadline: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           requires_registration: boolean
           scope: Database["public"]["Enums"]["event_scope"]
           starts_at: string
@@ -879,6 +1006,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approval_status?: Database["public"]["Enums"]["event_approval_status"]
           agape_id?: string | null
           capacity?: number | null
           clan_id?: string | null
@@ -899,6 +1027,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approval_status?: Database["public"]["Enums"]["event_approval_status"]
           agape_id?: string | null
           capacity?: number | null
           clan_id?: string | null
@@ -1016,6 +1145,55 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      connection_followups: {
+        Row: {
+          adolescent_id: string
+          availability: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          next_contact_on: string | null
+          notes: string
+          occurred_on: string
+          status: Database["public"]["Enums"]["connection_status"]
+          suggested_agape_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          approval_status?: Database["public"]["Enums"]["event_approval_status"]
+          adolescent_id: string
+          availability?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          next_contact_on?: string | null
+          notes: string
+          occurred_on?: string
+          status?: Database["public"]["Enums"]["connection_status"]
+          suggested_agape_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approval_status?: Database["public"]["Enums"]["event_approval_status"]
+          adolescent_id?: string
+          availability?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          next_contact_on?: string | null
+          notes?: string
+          occurred_on?: string
+          status?: Database["public"]["Enums"]["connection_status"]
+          suggested_agape_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "connection_followups_adolescent_id_fkey", columns: ["adolescent_id"], isOneToOne: false, referencedRelation: "adolescents", referencedColumns: ["id"] },
+          { foreignKeyName: "connection_followups_adolescent_id_fkey", columns: ["adolescent_id"], isOneToOne: false, referencedRelation: "v_adolescents", referencedColumns: ["id"] },
+          { foreignKeyName: "connection_followups_created_by_fkey", columns: ["created_by"], isOneToOne: false, referencedRelation: "profiles", referencedColumns: ["id"] },
+          { foreignKeyName: "connection_followups_suggested_agape_id_fkey", columns: ["suggested_agape_id"], isOneToOne: false, referencedRelation: "agapes", referencedColumns: ["id"] },
         ]
       }
       guardian_relationships: {
@@ -1170,6 +1348,7 @@ export type Database = {
         Row: {
           birth_date: string | null
           created_at: string
+          connection_enabled: boolean
           email: string | null
           first_name: string
           id: string
@@ -1184,6 +1363,7 @@ export type Database = {
         Insert: {
           birth_date?: string | null
           created_at?: string
+          connection_enabled?: boolean
           email?: string | null
           first_name: string
           id?: string
@@ -1198,6 +1378,7 @@ export type Database = {
         Update: {
           birth_date?: string | null
           created_at?: string
+          connection_enabled?: boolean
           email?: string | null
           first_name?: string
           id?: string
@@ -1218,6 +1399,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      materials: {
+        Row: {
+          body: string | null
+          created_at: string
+          description: string | null
+          external_url: string | null
+          file_name: string | null
+          id: string
+          kind: "file" | "link" | "note"
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string | null
+          title: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          description?: string | null
+          external_url?: string | null
+          file_name?: string | null
+          id?: string
+          kind?: "file" | "link" | "note"
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string | null
+          title: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          description?: string | null
+          external_url?: string | null
+          file_name?: string | null
+          id?: string
+          kind?: "file" | "link" | "note"
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string | null
+          title?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
       }
       meeting_leaders: {
         Row: {
@@ -1863,6 +2089,8 @@ export type Database = {
       }
     }
     Enums: {
+      event_approval_status: "pending" | "published" | "rejected"
+      connection_status: "new" | "contacted" | "scheduled" | "referred" | "closed"
       alert_severity: "info" | "warning" | "critical"
       alert_status: "open" | "in_progress" | "resolved" | "dismissed"
       app_role: "admin" | "leader"
