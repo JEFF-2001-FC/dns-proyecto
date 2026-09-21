@@ -1085,6 +1085,66 @@ export type Database = {
           },
         ]
       }
+      event_resources: {
+        Row: {
+          body: string | null
+          created_at: string
+          event_id: string
+          external_url: string | null
+          file_name: string | null
+          id: string
+          kind: "file" | "link" | "note"
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string | null
+          title: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          event_id: string
+          external_url?: string | null
+          file_name?: string | null
+          id?: string
+          kind?: "file" | "link" | "note"
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string | null
+          title: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          event_id?: string
+          external_url?: string | null
+          file_name?: string | null
+          id?: string
+          kind?: "file" | "link" | "note"
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string | null
+          title?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_resources_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_resources_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follow_up_notes: {
         Row: {
           adolescent_id: string

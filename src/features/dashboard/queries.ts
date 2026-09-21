@@ -49,6 +49,7 @@ export async function getAdminDashboard() {
     alertRows,
     eventRows,
     agapes,
+    birthdayPeople,
   ] = await Promise.all([
     supabase
       .from("adolescents")
@@ -107,6 +108,7 @@ export async function getAdminDashboard() {
       .order("starts_at")
       .limit(3),
     supabase.from("agapes").select("id, name"),
+    supabase.from("v_adolescents").select("id, full_name, birth_date, agape_name").eq("status", "active").not("birth_date", "is", null),
   ]);
 
   // Asistencia: por semana (4 barras) y por clan
@@ -196,6 +198,7 @@ export async function getAdminDashboard() {
       location: e.location,
       color: e.clan?.color ?? null,
     })) as UpcomingEvent[],
+    birthdays: (birthdayPeople.data ?? []).filter((person) => person.birth_date?.slice(5, 7) === today.slice(5, 7)).sort((a, b) => (a.birth_date ?? "").localeCompare(b.birth_date ?? "")).map((person) => ({ id: person.id ?? "", name: person.full_name ?? "Adolescente", day: Number(person.birth_date?.slice(8, 10)), agape: person.agape_name ?? null })),
   };
 }
 

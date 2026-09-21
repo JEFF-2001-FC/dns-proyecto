@@ -8,6 +8,7 @@ import { ClanDot } from "@/components/ui/clan-dot";
 import { fmtDateTime } from "@/lib/format";
 import type { getAdminDashboard } from "../queries";
 import { EventDate } from "./event-date";
+import { Cake } from "lucide-react";
 
 type Data = Awaited<ReturnType<typeof getAdminDashboard>>;
 
@@ -257,6 +258,11 @@ export function AdminDashboard({
           )}
         </Card>
       </section>
+
+      <Card>
+        <CardHeader title="Cumpleaños de este mes" action={<Link href="/calendario" className="text-sm font-semibold hover:text-flame-dark">Ver calendario</Link>} />
+        {data.birthdays.length === 0 ? <p className="mt-3 text-sm text-muted">No hay cumpleaños registrados este mes.</p> : <div className="mt-3 flex flex-wrap gap-2">{data.birthdays.map((birthday) => <span key={birthday.id} className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF4E8] px-3 py-1.5 text-sm text-[#6B3A00]"><Cake className="h-4 w-4" />{birthday.name} · {birthday.day}{birthday.agape ? ` · ${birthday.agape}` : ""}</span>)}</div>}
+      </Card>
     </div>
   );
 }

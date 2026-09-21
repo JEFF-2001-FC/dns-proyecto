@@ -4,6 +4,7 @@ do $$ begin
     create type public.material_kind as enum ('file', 'link', 'note');
   end if;
 end $$;
+alter type public.material_kind add value if not exists 'note';
 alter table public.materials
   add column if not exists kind public.material_kind not null default 'file',
   add column if not exists external_url text,
