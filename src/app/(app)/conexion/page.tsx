@@ -4,6 +4,7 @@ import { requireConnectionAccess } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
 import { todayLima } from "@/lib/dates";
 import { ConnectionFollowupForm } from "@/features/connection/components/connection-followup-form";
+import { ConnectionFollowupManager } from "@/features/connection/components/connection-followup-manager";
 
 export const metadata = { title: "Conexión · DNS" };
 
@@ -16,7 +17,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default async function ConexionPage() {
-  await requireConnectionAccess();
+  const user = await requireConnectionAccess();
   const supabase = await createClient();
   const [adolescentsResult, agapesResult, followupsResult] = await Promise.all([
     supabase.from("v_adolescents").select("id, full_name, status, phone, guardian_phone").in("status", ["pending", "active"]).order("created_at", { ascending: false }).limit(150),
@@ -71,6 +72,11 @@ export default async function ConexionPage() {
                 <p className="mt-2 text-xs text-subtle">
                   {item.occurred_on}{item.availability ? ` · ${item.availability}` : ""}{item.suggested_agape_id ? ` · Sugiere: ${agapeNames.get(item.suggested_agape_id) ?? "Ágape"}` : ""}{item.next_contact_on ? ` · Próximo contacto: ${item.next_contact_on}` : ""}
                 </p>
+                {user.role === "admin" && <ConnectionFollowupManager
+                  followup={{ id: item.id, adolescentId: item.adolescent_id, status: item.status, occurredOn: item.occurred_on, availability: item.availability, suggestedAgapeId: item.suggested_agape_id, notes: item.notes, nextContactOn: item.next_contact_on }}
+                  adolescents={adolescents.map((adolescent) => ({ id: adolescent.id, fullName: adolescent.fullName }))}
+                  agapes={agapes}
+                />}
               </li>
             ))}
           </ul>

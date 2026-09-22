@@ -92,11 +92,10 @@ export async function deleteEvent(eventId: string) {
   const supabase = await createClient();
   const { data: event } = await supabase.from("events").select("created_by, approval_status").eq("id", eventId).maybeSingle();
   if (!event || (user.role !== "admin" && (event.created_by !== user.id || event.approval_status === "published"))) throw new Error("No tienes permiso para eliminar este evento.");
-  const admin = createAdminClient();
-  const { data: resources } = await admin.from("event_resources").select("storage_path").eq("event_id", eventId);
-  const { error } = await admin.from("events").delete().eq("id", eventId);
+  const { data: resources } = await supabase.from("event_resources").select("storage_path").eq("event_id", eventId);
+  const { error } = await supabase.from("events").delete().eq("id", eventId);
   if (error) throw new Error(error.message);
   const paths = (resources ?? []).flatMap((resource) => resource.storage_path ? [resource.storage_path] : []);
-  if (paths.length) await admin.storage.from("dns-event-resources").remove(paths);
+  if (paths.length) await createAdminClient().storage.from("dns-event-resources").remove(paths);
   revalidatePath("/eventos"); revalidatePath("/calendario"); revalidatePath("/inicio"); revalidatePath("/admin/eventos-pendientes");
 }
