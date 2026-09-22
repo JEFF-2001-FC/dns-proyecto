@@ -17,8 +17,9 @@ export default async function CalendarioPage() {
   ]);
   const events = data ?? [];
   const { data: resourceRows } = events.length ? await supabase.from("event_resources").select("id, event_id, title, kind, external_url, body, storage_path").in("event_id", events.map((event) => event.id)).order("created_at") : { data: [] as never[] };
-  const admin = createAdminClient();
-  const resources = await Promise.all((resourceRows ?? []).map(async (resource) => ({ ...resource, url: resource.storage_path ? (await admin.storage.from("dns-event-resources").createSignedUrl(resource.storage_path, 900)).data?.signedUrl ?? null : null })));
+  const hasFiles = (resourceRows ?? []).some((resource) => resource.storage_path);
+  const admin = hasFiles ? createAdminClient() : null;
+  const resources = await Promise.all((resourceRows ?? []).map(async (resource) => ({ ...resource, url: resource.storage_path && admin ? (await admin.storage.from("dns-event-resources").createSignedUrl(resource.storage_path, 900)).data?.signedUrl ?? null : null })));
   const resourcesByEvent = new Map<string, typeof resources>();
   for (const resource of resources) resourcesByEvent.set(resource.event_id, [...(resourcesByEvent.get(resource.event_id) ?? []), resource]);
   const birthdays = (people ?? []).filter((person) => person.birth_date?.slice(5, 7) === month).sort((a, b) => (a.birth_date ?? "").localeCompare(b.birth_date ?? ""));

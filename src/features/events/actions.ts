@@ -85,3 +85,18 @@ export async function deleteEventResource(resourceId: string) {
   if (resource.storage_path) await admin.storage.from("dns-event-resources").remove([resource.storage_path]);
   revalidatePath("/eventos"); revalidatePath("/calendario");
 }
+
+export async function deleteEvent(eventId: string) {
+  const user = await requireUser();
+  if (!z.uuid().safeParse(eventId).success) throw new Error("Evento no válido.");
+  const supabase = await createClient();
+  const { data: event } = await supabase.from("events").select("created_by, approval_status").eq("id", eventId).maybeSingle();
+  if (!event || (user.role !== "admin" && (event.created_by !== user.id || event.approval_status === "published"))) throw new Error("No tienes permiso para eliminar este evento.");
+  const admin = createAdminClient();
+  const { data: resources } = await admin.from("event_resources").select("storage_path").eq("event_id", eventId);
+  const { error } = await admin.from("events").delete().eq("id", eventId);
+  if (error) throw new Error(error.message);
+  const paths = (resources ?? []).flatMap((resource) => resource.storage_path ? [resource.storage_path] : []);
+  if (paths.length) await admin.storage.from("dns-event-resources").remove(paths);
+  revalidatePath("/eventos"); revalidatePath("/calendario"); revalidatePath("/inicio"); revalidatePath("/admin/eventos-pendientes");
+}
