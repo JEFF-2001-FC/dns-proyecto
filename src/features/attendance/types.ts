@@ -19,6 +19,7 @@ export type RosterItem = {
   clanName: string | null;
   clanColor: string | null;
   attendance: AttendanceStatus | null;
+  justificationReason: string;
   isProvisional: boolean;
 };
 

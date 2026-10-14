@@ -50,6 +50,7 @@ export async function getAdminDashboard() {
     eventRows,
     agapes,
     birthdayPeople,
+    announcements,
   ] = await Promise.all([
     supabase
       .from("adolescents")
@@ -109,6 +110,7 @@ export async function getAdminDashboard() {
       .limit(3),
     supabase.from("agapes").select("id, name"),
     supabase.from("v_adolescents").select("id, full_name, birth_date, agape_name").eq("status", "active").not("birth_date", "is", null),
+    supabase.from("announcements").select("id, title, body, created_at").order("created_at", { ascending: false }).limit(5),
   ]);
 
   // Asistencia: por semana (4 barras) y por clan
@@ -198,6 +200,7 @@ export async function getAdminDashboard() {
       location: e.location,
       color: e.clan?.color ?? null,
     })) as UpcomingEvent[],
+    announcements: announcements.data ?? [],
     birthdays: (birthdayPeople.data ?? []).filter((person) => person.birth_date?.slice(5, 7) === today.slice(5, 7)).sort((a, b) => (a.birth_date ?? "").localeCompare(b.birth_date ?? "")).map((person) => ({ id: person.id ?? "", name: person.full_name ?? "Adolescente", day: Number(person.birth_date?.slice(8, 10)), agape: person.agape_name ?? null })),
   };
 }
@@ -250,6 +253,8 @@ export async function getLeaderDashboard(profileId: string) {
       todayRecorded: false,
       nextEvent: null,
       birthdays: [],
+      announcements: [],
+      courses: [],
     };
   }
 
@@ -261,6 +266,8 @@ export async function getLeaderDashboard(profileId: string) {
     todayMeeting,
     nextEvent,
     people,
+    announcements,
+    courses,
   ] = await Promise.all([
     supabase
       .from("v_adolescents")
@@ -303,6 +310,12 @@ export async function getLeaderDashboard(profileId: string) {
       .in("agape_id", agapeIds)
       .eq("status", "active")
       .not("birth_date", "is", null),
+    supabase.from("announcements").select("id, title, body, created_at").order("created_at", { ascending: false }).limit(5),
+    supabase
+      .from("bible_school_enrollments")
+      .select("id, status, started_on, completed_on, adolescent:adolescents(first_name, last_name), course:bible_school_courses(name)")
+      .order("created_at", { ascending: false })
+      .limit(8),
   ]);
 
   const month = today.slice(5, 7);
@@ -346,6 +359,16 @@ export async function getLeaderDashboard(profileId: string) {
           color: ev.clan?.color ?? null,
         } as UpcomingEvent)
       : null,
+    announcements: announcements.data ?? [],
+    courses: (courses.data ?? []).map((item) => ({
+      id: item.id,
+      name: item.course?.name ?? "Curso",
+      adolescent: item.adolescent
+        ? `${item.adolescent.first_name} ${item.adolescent.last_name}`
+        : "Adolescente",
+      status: item.status,
+      completedOn: item.completed_on,
+    })),
     birthdays,
   };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Search, UserPlus } from "lucide-react";
 import { saveAttendance } from "../actions";
 import {
@@ -39,10 +40,16 @@ export function AttendanceSheet({
   editable,
   readOnlyReason,
 }: Props) {
+  const router = useRouter();
   const [people, setPeople] = useState<RosterItem[]>(roster);
   const [marks, setMarks] = useState<Record<string, AttendanceStatus>>(() =>
     Object.fromEntries(roster.map((r) => [r.id, r.attendance ?? "present"])),
   );
+  const [justifications, setJustifications] = useState<Record<string, string>>(
+    () => Object.fromEntries(roster.map((r) => [r.id, r.justificationReason])),
+  );
+  const [justifyingId, setJustifyingId] = useState<string | null>(null);
+  const [justificationDraft, setJustificationDraft] = useState("");
   const [topic, setTopic] = useState(initialTopic);
   const [clanFilter, setClanFilter] = useState<string>("all");
   const [query, setQuery] = useState("");
@@ -73,9 +80,30 @@ export function AttendanceSheet({
   }, [people, marks]);
 
   const setMark = (id: string, status: AttendanceStatus) => {
+    if (status === "justified") {
+      setJustifyingId(id);
+      setJustificationDraft(justifications[id] ?? "");
+      return;
+    }
     setMarks((m) => ({ ...m, [id]: status }));
+    setJustifications((items) => ({ ...items, [id]: "" }));
     setDirty(true);
     setFeedback(null);
+  };
+
+  const confirmJustification = () => {
+    if (!justifyingId) return;
+    const reason = justificationDraft.trim();
+    if (!reason) {
+      setFeedback({ ok: false, text: "Indica el motivo de la justificación." });
+      return;
+    }
+    setMarks((m) => ({ ...m, [justifyingId]: "justified" }));
+    setJustifications((items) => ({ ...items, [justifyingId]: reason }));
+    setDirty(true);
+    setFeedback(null);
+    setJustifyingId(null);
+    setJustificationDraft("");
   };
 
   const markVisible = (status: AttendanceStatus) => {
@@ -88,6 +116,16 @@ export function AttendanceSheet({
 
   const save = () =>
     startSaving(async () => {
+      const missingJustification = people.find(
+        (p) => (marks[p.id] ?? "present") === "justified" && !justifications[p.id]?.trim(),
+      );
+      if (missingJustification) {
+        setFeedback({
+          ok: false,
+          text: `Falta detallar la justificación de ${missingJustification.fullName}.`,
+        });
+        return;
+      }
       const res = await saveAttendance({
         agapeId,
         meetingTypeId,
@@ -96,10 +134,15 @@ export function AttendanceSheet({
         records: people.map((p) => ({
           adolescentId: p.id,
           status: marks[p.id] ?? "present",
+          justificationReason: justifications[p.id] ?? "",
         })),
       });
       setFeedback({ ok: res.ok, text: res.message });
-      if (res.ok) setDirty(false);
+      if (res.ok) {
+        setDirty(false);
+        window.alert("Guardado exitoso.");
+        router.push("/inicio");
+      }
     });
 
   const onVisitorAdded = (item: RosterItem) => {
@@ -109,6 +152,7 @@ export function AttendanceSheet({
       ),
     );
     setMarks((m) => ({ ...m, [item.id]: "present" }));
+    setJustifications((items) => ({ ...items, [item.id]: "" }));
     setFeedback({
       ok: true,
       text: `${item.fullName} agregado y marcado presente.`,
@@ -338,6 +382,47 @@ export function AttendanceSheet({
           }}
           defaultClanId={clanFilter !== "all" ? clanFilter : undefined}
         />
+      )}
+
+      {editable && justifyingId && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+            <h2 className="font-display text-2xl font-bold">
+              Motivo de justificación
+            </h2>
+            <p className="mt-1 text-sm text-zinc-600">
+              {people.find((p) => p.id === justifyingId)?.fullName}
+            </p>
+            <textarea
+              value={justificationDraft}
+              onChange={(event) => setJustificationDraft(event.target.value)}
+              rows={4}
+              maxLength={500}
+              autoFocus
+              placeholder="Ej. Avisó que estaba enfermo y envió constancia."
+              className="mt-4 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus-visible:border-zinc-900"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setJustifyingId(null);
+                  setJustificationDraft("");
+                }}
+                className="rounded-xl border border-zinc-200 px-4 py-2 text-sm font-semibold"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmJustification}
+                className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white"
+              >
+                Guardar motivo
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

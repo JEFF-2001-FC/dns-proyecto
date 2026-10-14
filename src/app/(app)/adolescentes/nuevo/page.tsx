@@ -15,5 +15,5 @@ export default async function NuevoAdolescentePage() {
   const agapes = user.role === "admin"
     ? ((await supabase.from("agapes").select("id, name").eq("active", true).order("name")).data ?? [])
     : ((await supabase.from("v_my_context").select("agape_id, agape_name").not("agape_id", "is", null)).data ?? []).flatMap((item) => item.agape_id && item.agape_name ? [{ id: item.agape_id, name: item.agape_name }] : []);
-  return <div className="space-y-6"><PageHeader eyebrow="Adolescentes" title="Registrar adolescente" description={user.role === "admin" ? "El registro creado por administración queda activo de inmediato." : "El registro se enviará al administrador para su aprobación."} /><AdolescentRegisterForm agapes={agapes} clans={clansResult.data ?? []} relationships={relationshipsResult.data ?? []} /></div>;
+  return <div className="space-y-6"><PageHeader eyebrow="Adolescentes" title="Registrar adolescente" description="El registro queda activo de inmediato y se añade al reporte de nuevos." /><AdolescentRegisterForm agapes={agapes} clans={clansResult.data ?? []} relationships={relationshipsResult.data ?? []} /></div>;
 }

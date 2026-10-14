@@ -46,7 +46,7 @@ type RosterRow = {
   clan_color: string | null;
 };
 
-export function toRosterItem(row: RosterRow, attendance?: { status: AttendanceStatus; is_provisional: boolean }): RosterItem {
+export function toRosterItem(row: RosterRow, attendance?: { status: AttendanceStatus; is_provisional: boolean; justification_reason: string | null }): RosterItem {
   return {
     id: row.id,
     fullName: row.full_name,
@@ -56,6 +56,7 @@ export function toRosterItem(row: RosterRow, attendance?: { status: AttendanceSt
     clanName: row.clan_name,
     clanColor: row.clan_color,
     attendance: attendance?.status ?? null,
+    justificationReason: attendance?.justification_reason ?? "",
     isProvisional: attendance?.is_provisional ?? row.status === "pending",
   };
 }
@@ -86,14 +87,14 @@ export async function getRoster(params: { agapeId: string; meetingTypeId: string
   if (rosterRes.error) throw new Error(rosterRes.error.message);
 
   const meeting = meetingRes.data;
-  const saved = new Map<string, { status: AttendanceStatus; is_provisional: boolean }>();
+  const saved = new Map<string, { status: AttendanceStatus; is_provisional: boolean; justification_reason: string | null }>();
 
   if (meeting) {
     const { data } = await supabase
       .from("attendance")
-      .select("adolescent_id, status, is_provisional")
+      .select("adolescent_id, status, is_provisional, justification_reason")
       .eq("meeting_id", meeting.id);
-    for (const r of data ?? []) saved.set(r.adolescent_id, { status: r.status, is_provisional: r.is_provisional });
+    for (const r of data ?? []) saved.set(r.adolescent_id, { status: r.status, is_provisional: r.is_provisional, justification_reason: r.justification_reason });
   }
 
   return {

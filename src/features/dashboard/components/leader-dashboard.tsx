@@ -6,6 +6,7 @@ import { fmtDate } from "@/lib/format";
 import { formatTime, weekdayOf, WEEKDAYS } from "@/lib/dates";
 import type { getLeaderDashboard } from "../queries";
 import { EventDate } from "./event-date";
+import { AnnouncementsPanel } from "@/features/announcements/components/announcements-panel";
 
 type Data = Awaited<ReturnType<typeof getLeaderDashboard>>;
 
@@ -239,6 +240,34 @@ export function LeaderDashboard({ data }: { data: Data }) {
           </p>
         </div>
       )}
+
+      <AnnouncementsPanel announcements={data.announcements} isAdmin={false} />
+
+      <section className="rounded-[22px] border border-line bg-white p-4">
+        <h2 className="font-display text-2xl font-bold">Escuela Bíblica</h2>
+        {data.courses.length === 0 ? (
+          <p className="mt-3 text-sm text-muted">
+            Aún no hay cursos registrados para tus adolescentes.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-2">
+            {data.courses.map((course) => (
+              <li
+                key={course.id}
+                className="flex items-center justify-between gap-3 rounded-2xl bg-paper p-3"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-bold">{course.name}</p>
+                  <p className="truncate text-sm text-muted">{course.adolescent}</p>
+                </div>
+                <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-muted">
+                  {course.status === "completed" ? "Completado" : "En curso"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

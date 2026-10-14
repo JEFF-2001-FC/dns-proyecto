@@ -12,7 +12,14 @@ const meetingKey = {
 export const saveAttendanceSchema = z.object({
   ...meetingKey,
   records: z
-    .array(z.object({ adolescentId: z.uuid(), status }))
+    .array(z.object({
+      adolescentId: z.uuid(),
+      status,
+      justificationReason: z.string().trim().max(500).optional(),
+    }).refine((record) => record.status !== "justified" || Boolean(record.justificationReason?.trim()), {
+      message: "Indica el motivo de la justificación",
+      path: ["justificationReason"],
+    }))
     .min(1, { error: "No hay adolescentes para guardar" })
     .max(500),
 });

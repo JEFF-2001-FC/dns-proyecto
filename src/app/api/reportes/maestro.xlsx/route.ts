@@ -18,15 +18,18 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams; const agapeId = params.get("agape") ?? ""; const from = params.get("from") ?? ""; const to = params.get("to") ?? "";
   const supabase = await createClient();
   let adolescentQuery = supabase.from("v_adolescents").select("id, full_name, status, age, birth_date, phone, guardian_name, guardian_phone, school_name, agape_name, clan_name, created_at").order("full_name");
+  let newAdolescentQuery = supabase.from("v_new_adolescents").select("id, full_name, agape_id, agape_name, clan_name, created_at, created_by_name, created_by_email").order("created_at", { ascending: false });
   let meetingQuery = supabase.from("meetings").select("id, agape_id, meeting_type_id, meeting_date, topic, description, created_at").order("meeting_date", { ascending: false });
   let eventQuery = supabase.from("events").select("title, starts_at, ends_at, scope, approval_status, location, description, created_at, agape_id").order("starts_at", { ascending: false });
   let followupQuery = supabase.from("connection_followups").select("adolescent_id, status, occurred_on, availability, notes, next_contact_on, suggested_agape_id, created_at").order("occurred_on", { ascending: false });
-  if (agapeId) { adolescentQuery = adolescentQuery.eq("agape_id", agapeId); meetingQuery = meetingQuery.eq("agape_id", agapeId); eventQuery = eventQuery.or(`scope.eq.general,agape_id.eq.${agapeId}`); }
+  if (agapeId) { adolescentQuery = adolescentQuery.eq("agape_id", agapeId); newAdolescentQuery = newAdolescentQuery.eq("agape_id", agapeId); meetingQuery = meetingQuery.eq("agape_id", agapeId); eventQuery = eventQuery.or(`scope.eq.general,agape_id.eq.${agapeId}`); }
   if (from) { meetingQuery = meetingQuery.gte("meeting_date", from); eventQuery = eventQuery.gte("starts_at", `${from}T00:00:00Z`); followupQuery = followupQuery.gte("occurred_on", from); }
   if (to) { meetingQuery = meetingQuery.lte("meeting_date", to); eventQuery = eventQuery.lte("starts_at", `${to}T23:59:59Z`); followupQuery = followupQuery.lte("occurred_on", to); }
-  const [adolescents, meetings, attendance, eventRows, followups, agapes, meetingTypes] = await Promise.all([
-    adolescentQuery, meetingQuery,
-    supabase.from("attendance").select("adolescent_id, meeting_id, status, notes, recorded_at").order("recorded_at", { ascending: false }),
+  const [adolescents, newAdolescents, meetings, attendance, eventRows, followups, agapes, meetingTypes] = await Promise.all([
+    adolescentQuery,
+    newAdolescentQuery,
+    meetingQuery,
+    supabase.from("attendance").select("adolescent_id, meeting_id, status, notes, justification_reason, recorded_at").order("recorded_at", { ascending: false }),
     eventQuery, followupQuery,
     supabase.from("agapes").select("id, name"),
     supabase.from("meeting_types").select("id, name"),
@@ -42,10 +45,14 @@ export async function GET(request: Request) {
     "Ágape": text(row.agape_name), Clan: text(row.clan_name), Celular: text(row.phone), Apoderado: text(row.guardian_name),
     "Teléfono apoderado": text(row.guardian_phone), "Centro de estudios": text(row.school_name), "Registrado el": text(row.created_at),
   })), [28, 14, 10, 18, 22, 18, 16, 28, 20, 28, 24]);
+  addSheet(book, "Nuevos", (newAdolescents.data ?? []).map((row) => ({
+    Nombre: text(row.full_name), "Ágape": text(row.agape_name), Clan: text(row.clan_name), "Creado el": text(row.created_at),
+    "Creado por": text(row.created_by_name), "Correo creador": text(row.created_by_email),
+  })), [28, 22, 18, 24, 28, 32]);
   addSheet(book, "Asistencia", (attendance.data ?? []).map((row) => {
     const meeting = meetingById.get(row.meeting_id);
-    return { Adolescente: text(adolescentById.get(row.adolescent_id)), Fecha: text(meeting?.meeting_date), "Ágape": text(agapeById.get(meeting?.agape_id ?? "")), Tema: text(meeting?.topic), Estado: text(row.status), Observaciones: text(row.notes), "Registrado el": text(row.recorded_at) };
-  }), [28, 16, 22, 32, 14, 44, 24]);
+    return { Adolescente: text(adolescentById.get(row.adolescent_id)), Fecha: text(meeting?.meeting_date), "Ágape": text(agapeById.get(meeting?.agape_id ?? "")), Tema: text(meeting?.topic), Estado: text(row.status), "Motivo justificación": text(row.justification_reason), Observaciones: text(row.notes), "Registrado el": text(row.recorded_at) };
+  }), [28, 16, 22, 32, 14, 44, 44, 24]);
   addSheet(book, "Reuniones", (meetings.data ?? []).map((row) => ({
     Fecha: text(row.meeting_date), "Ágape": text(agapeById.get(row.agape_id)), Tipo: text(typeById.get(row.meeting_type_id)),
     Tema: text(row.topic), Descripción: text(row.description), "Creada el": text(row.created_at),

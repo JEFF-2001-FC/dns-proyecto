@@ -631,11 +631,56 @@ export type Database = {
         }
         Relationships: []
       }
+      announcements: {
+        Row: {
+          active: boolean
+          body: string
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          starts_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          body: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          starts_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          starts_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance: {
         Row: {
           adolescent_id: string
           id: string
           is_provisional: boolean
+          justification_reason: string | null
           meeting_id: string
           notes: string | null
           recorded_at: string
@@ -647,6 +692,7 @@ export type Database = {
           adolescent_id: string
           id?: string
           is_provisional?: boolean
+          justification_reason?: string | null
           meeting_id: string
           notes?: string | null
           recorded_at?: string
@@ -658,6 +704,7 @@ export type Database = {
           adolescent_id?: string
           id?: string
           is_provisional?: boolean
+          justification_reason?: string | null
           meeting_id?: string
           notes?: string | null
           recorded_at?: string
@@ -1905,6 +1952,35 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"] | null
         }
         Relationships: []
+      }
+      v_new_adolescents: {
+        Row: {
+          agape_id: string | null
+          agape_name: string | null
+          clan_id: string | null
+          clan_name: string | null
+          created_at: string | null
+          created_by_email: string | null
+          created_by_name: string | null
+          full_name: string | null
+          id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adolescent_agape_memberships_agape_id_fkey"
+            columns: ["agape_id"]
+            isOneToOne: false
+            referencedRelation: "agapes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adolescent_clan_memberships_clan_id_fkey"
+            columns: ["clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_adolescents: {
         Row: {

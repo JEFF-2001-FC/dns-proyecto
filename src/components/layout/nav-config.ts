@@ -36,7 +36,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Asistencia",
     icon: ClipboardCheck,
     roles: ALL,
-    mobile: true,
+    mobile: false,
   },
   {
     href: "/adolescentes",

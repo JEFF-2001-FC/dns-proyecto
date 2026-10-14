@@ -52,7 +52,7 @@ export async function registerAdolescent(input: unknown): Promise<{ ok: boolean;
   revalidatePath("/adolescentes");
   revalidatePath("/admin/aprobaciones");
   revalidatePath("/inicio");
-  return { ok: true, message: user.role === "admin" ? "Adolescente registrado." : "Registro enviado para aprobación del administrador." };
+  return { ok: true, message: "Adolescente registrado." };
 }
 
 export async function reviewAdolescent(adolescentId: string, approve: boolean, reason?: string): Promise<{ ok: boolean; message: string }> {

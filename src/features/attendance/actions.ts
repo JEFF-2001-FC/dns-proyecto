@@ -65,6 +65,7 @@ export async function saveAttendance(input: SaveAttendanceInput): Promise<Action
     meeting_id: meeting.data,
     adolescent_id: r.adolescentId,
     status: r.status,
+    justification_reason: r.status === "justified" ? r.justificationReason?.trim() : null,
   }));
 
   const { error } = await supabase.from("attendance").upsert(rows, { onConflict: "meeting_id,adolescent_id" });
@@ -113,13 +114,9 @@ export async function registerVisitor(input: ExpressRegisterInput): Promise<Acti
   revalidatePath("/adolescentes");
 
   const item = row
-    ? toRosterItem(row as Parameters<typeof toRosterItem>[0], { status: "present", is_provisional: row.status === "pending" })
+    ? toRosterItem(row as Parameters<typeof toRosterItem>[0], { status: "present", is_provisional: row.status === "pending", justification_reason: null })
     : null;
   if (!item) return { ok: false, message: "Se registró, recarga la página para verlo." };
 
-  return {
-    ok: true,
-    message: item.status === "pending" ? `${item.fullName} quedó registrado y pendiente de aprobación.` : `${item.fullName} registrado.`,
-    data: item,
-  };
+  return { ok: true, message: `${item.fullName} registrado.`, data: item };
 }
