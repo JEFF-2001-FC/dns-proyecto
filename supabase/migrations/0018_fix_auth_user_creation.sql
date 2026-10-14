@@ -8,14 +8,19 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, full_name)
-  values (new.id, new.email, coalesce(new.raw_user_meta_data ->> 'full_name', ''))
-  on conflict (id) do update
-    set email = excluded.email,
-        full_name = case
-          when nullif(public.profiles.full_name, '') is null then excluded.full_name
-          else public.profiles.full_name
-        end;
+  begin
+    insert into public.profiles (id, email, full_name)
+    values (new.id, new.email, coalesce(new.raw_user_meta_data ->> 'full_name', ''))
+    on conflict (id) do update
+      set email = excluded.email,
+          full_name = case
+            when nullif(public.profiles.full_name, '') is null then excluded.full_name
+            else public.profiles.full_name
+          end;
+  exception when others then
+    -- No bloquea la creación en Auth; la app puede crear/vincular el perfil después.
+    null;
+  end;
 
   return new;
 end;

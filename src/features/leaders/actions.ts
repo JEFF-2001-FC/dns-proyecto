@@ -191,8 +191,7 @@ export async function updateLeader(input: UpdateLeaderInput): Promise<CreateLead
     const removeAccount = () => admin.auth.admin.deleteUser(account.user.id);
     const { error: profileError } = await admin
       .from("profiles")
-      .update({ full_name: fullName, email, active: data.accountEnabled })
-      .eq("id", account.user.id);
+      .upsert({ id: account.user.id, full_name: fullName, email, active: data.accountEnabled }, { onConflict: "id" });
     if (profileError) {
       await removeAccount();
       return { ok: false, message: profileError.message };
