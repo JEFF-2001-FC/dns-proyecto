@@ -70,11 +70,12 @@ export function LeaderEditor({
         firstName: value("firstName"),
         lastName: value("lastName"),
         email: value("email"),
+        password: value("password"),
         phone: value("phone") || undefined,
         sex: value("sex") as "female" | "male",
         clanId: value("clanId"),
         agapes: assignments,
-        accountEnabled,
+        accountEnabled: leader.profileId ? accountEnabled : true,
         connectionEnabled,
       });
       setMessage({ ok: result.ok, text: result.message });
@@ -98,9 +99,14 @@ export function LeaderEditor({
               <Field label="Apellido" htmlFor={`last-name-${leader.id}`}>
                 <Input id={`last-name-${leader.id}`} name="lastName" defaultValue={leader.lastName} required maxLength={80} />
               </Field>
-              <Field label="Correo" htmlFor={`email-${leader.id}`} hint={leader.profileId ? "También actualiza el usuario de acceso." : "Si no tiene cuenta, úsalo para crearla en Supabase."}>
-                <Input id={`email-${leader.id}`} name="email" type="email" defaultValue={leader.email} />
+              <Field label="Correo" htmlFor={`email-${leader.id}`} hint={leader.profileId ? "También actualiza el usuario de acceso." : "Para crear la cuenta, escribe correo y contraseña temporal."}>
+                <Input id={`email-${leader.id}`} name="email" type="email" defaultValue={leader.email} required={!leader.profileId} />
               </Field>
+              {!leader.profileId && (
+                <Field label="Contraseña temporal" htmlFor={`password-${leader.id}`} hint="Mínimo 8 caracteres.">
+                  <Input id={`password-${leader.id}`} name="password" type="password" minLength={8} autoComplete="new-password" required />
+                </Field>
+              )}
               <Field label="Celular" htmlFor={`phone-${leader.id}`} hint="Opcional">
                 <Input id={`phone-${leader.id}`} name="phone" type="tel" inputMode="tel" defaultValue={leader.phone} maxLength={20} />
               </Field>
@@ -147,8 +153,8 @@ export function LeaderEditor({
             <label className={`flex items-start gap-3 rounded-2xl border p-4 ${leader.profileId ? "border-line bg-white" : "border-line bg-paper text-muted"}`}>
               <input type="checkbox" checked={accountEnabled} disabled={!leader.profileId} onChange={(event) => setAccountEnabled(event.target.checked)} className="mt-1 h-4 w-4 accent-[#E8491D]" />
               <span>
-                <span className="block font-semibold text-ink">Puede entrar a DNS</span>
-                <span className="text-sm">Al desactivarlo, su cuenta queda inhabilitada y no podrá iniciar sesión.</span>
+                <span className="block font-semibold text-ink">{leader.profileId ? "Puede entrar a DNS" : "Se creará cuenta de acceso"}</span>
+                <span className="text-sm">{leader.profileId ? "Al desactivarlo, su cuenta queda inhabilitada y no podrá iniciar sesión." : "Al guardar, se creará el usuario en Supabase y quedará vinculado a esta ficha."}</span>
               </span>
             </label>
             <label className="flex items-start gap-3 rounded-2xl border border-line bg-white p-4">

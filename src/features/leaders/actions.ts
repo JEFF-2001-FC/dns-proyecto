@@ -25,6 +25,7 @@ const updateSchema = z.object({
   firstName: z.string().trim().min(2).max(80),
   lastName: z.string().trim().min(2).max(80),
   email: z.email().optional().or(z.literal("")),
+  password: z.string().max(72).optional().or(z.literal("")),
   phone: z.string().trim().max(20).optional(),
   sex: z.enum(["female", "male"]),
   clanId: z.string().uuid().optional().or(z.literal("")),
@@ -118,6 +119,7 @@ export async function updateLeader(input: UpdateLeaderInput): Promise<CreateLead
   const parsed = updateSchema.safeParse({
     ...input,
     email: input.email?.trim().toLowerCase() || "",
+    password: input.password?.trim() || "",
     phone: input.phone?.trim() || undefined,
     clanId: input.clanId || "",
   });
@@ -126,6 +128,7 @@ export async function updateLeader(input: UpdateLeaderInput): Promise<CreateLead
   const data = parsed.data;
   const admin = createAdminClient();
   const email = data.email || null;
+  const password = data.password || "";
   const fullName = `${data.firstName} ${data.lastName}`.trim();
 
   const { data: leader, error: leaderError } = await admin
@@ -171,6 +174,38 @@ export async function updateLeader(input: UpdateLeaderInput): Promise<CreateLead
       user_metadata: { full_name: fullName },
     });
     if (authError) return { ok: false, message: authError.message };
+  } else if (email || password) {
+    if (!email) return { ok: false, message: "Escribe un correo para crear la cuenta de acceso." };
+    if (password.length < 8) return { ok: false, message: "La contraseña temporal debe tener al menos 8 caracteres." };
+
+    const { data: account, error: accountError } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: fullName },
+    });
+    if (accountError || !account.user) {
+      return { ok: false, message: accountError?.message ?? "No se pudo crear la cuenta de acceso." };
+    }
+
+    const removeAccount = () => admin.auth.admin.deleteUser(account.user.id);
+    const { error: profileError } = await admin
+      .from("profiles")
+      .update({ full_name: fullName, email, active: data.accountEnabled })
+      .eq("id", account.user.id);
+    if (profileError) {
+      await removeAccount();
+      return { ok: false, message: profileError.message };
+    }
+
+    const { error: linkError } = await admin
+      .from("leaders")
+      .update({ profile_id: account.user.id, status: data.accountEnabled ? "active" : "inactive" })
+      .eq("id", data.id);
+    if (linkError) {
+      await removeAccount();
+      return { ok: false, message: linkError.message };
+    }
   }
 
   const today = limaDate();

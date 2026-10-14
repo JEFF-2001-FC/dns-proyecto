@@ -54,7 +54,7 @@ export default async function LideresPage() {
               <p className="font-display text-[34px] font-bold leading-tight text-flame-dark">{sinCuenta}</p>
               <p className="text-sm text-muted">
                 {sinCuenta === 1 ? "líder tiene correo pero aún no tiene cuenta" : "líderes tienen correo pero aún no tienen cuenta"}.
-                Créala en Supabase → Authentication → Add user con ese mismo correo: se vincula sola con su ficha.
+                Entra a Editar, coloca una contraseña temporal y guarda para crear y vincular su cuenta.
               </p>
             </div>
           )}
