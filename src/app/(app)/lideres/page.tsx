@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { LeaderManager } from "@/features/leaders/components/leader-manager";
 import { ConnectionAccessToggle } from "@/features/leaders/components/connection-access-toggle";
 import { LeaderAccountToggle } from "@/features/leaders/components/leader-account-toggle";
+import { LeaderEditor } from "@/features/leaders/components/leader-editor";
 
 export const metadata = { title: "Líderes · DNS" };
 
@@ -20,11 +21,11 @@ export default async function LideresPage() {
   const { data: leaders } = await supabase
     .from("leaders")
     .select(
-      "id, first_name, last_name, phone, email, status, profile_id, connection_enabled, leader_agape_assignments(agape_id, role, ended_on, agapes(name)), leader_clan_memberships(clan_id, ended_on, clans(name, slug, color, color_soft, color_ink))",
+      "id, first_name, last_name, phone, email, sex, status, profile_id, connection_enabled, leader_agape_assignments(agape_id, role, ended_on, agapes(name)), leader_clan_memberships(clan_id, ended_on, clans(name, slug, color, color_soft, color_ink))",
     )
     .order("last_name");
 
-  const { data: agapes } = await supabase.from("agapes").select("id, name").eq("active", true).order("name");
+  const { data: agapeOptions } = await supabase.from("agapes").select("id, name").eq("active", true).order("name");
   const { data: clans } = await supabase.from("clans").select("id, name").eq("active", true).order("sort_order");
 
   const list = leaders ?? [];
@@ -43,7 +44,7 @@ export default async function LideresPage() {
         eyebrow="Administración"
         title="Líderes"
         description="Quién dirige cada ágape, a qué clan pertenece y si ya tiene cuenta para entrar. Cada líder mantiene sus propios datos desde Mi perfil; tú puedes revisarlos y corregirlos."
-        action={<LeaderManager agapes={agapes ?? []} clans={clans ?? []} />}
+        action={<LeaderManager agapes={agapeOptions ?? []} clans={clans ?? []} />}
       />
 
       {(sinCorreo > 0 || sinCuenta > 0) && (
@@ -87,6 +88,7 @@ export default async function LideresPage() {
             const agapes = (l.leader_agape_assignments ?? []).filter((a) => a.ended_on === null);
             const clanRow = (l.leader_clan_memberships ?? []).find((c) => c.ended_on === null);
             const clan = clanRow?.clans;
+            const enabled = l.profile_id ? accountActive.get(l.profile_id) ?? false : false;
 
             return (
               <li key={l.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -135,8 +137,25 @@ export default async function LideresPage() {
                     </span>
                   )}
                   {l.profile_id && (
-                    <><LeaderAccountToggle leaderId={l.id} enabled={accountActive.get(l.profile_id) ?? false} /><ConnectionAccessToggle leaderId={l.id} enabled={l.connection_enabled} /></>
+                    <><LeaderAccountToggle leaderId={l.id} enabled={enabled} /><ConnectionAccessToggle leaderId={l.id} enabled={l.connection_enabled} /></>
                   )}
+                  <LeaderEditor
+                    leader={{
+                      id: l.id,
+                      firstName: l.first_name,
+                      lastName: l.last_name,
+                      email: l.email ?? "",
+                      phone: l.phone ?? "",
+                      sex: l.sex,
+                      profileId: l.profile_id,
+                      accountEnabled: enabled,
+                      connectionEnabled: l.connection_enabled,
+                      clanId: clanRow?.clan_id ?? "",
+                      agapes: agapes.map((agape) => ({ id: agape.agape_id, role: agape.role })),
+                    }}
+                    agapes={agapeOptions ?? []}
+                    clans={clans ?? []}
+                  />
                 </div>
               </li>
             );

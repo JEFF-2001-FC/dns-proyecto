@@ -19,6 +19,22 @@ const schema = z.object({
 export type CreateLeaderInput = z.infer<typeof schema>;
 export type CreateLeaderResult = { ok: boolean; message: string };
 
+const assignmentSchema = z.object({ id: z.string().uuid(), role: z.enum(["lead", "assistant"]) });
+const updateSchema = z.object({
+  id: z.string().uuid(),
+  firstName: z.string().trim().min(2).max(80),
+  lastName: z.string().trim().min(2).max(80),
+  email: z.email().optional().or(z.literal("")),
+  phone: z.string().trim().max(20).optional(),
+  sex: z.enum(["female", "male"]),
+  clanId: z.string().uuid().optional().or(z.literal("")),
+  agapes: z.array(assignmentSchema),
+  accountEnabled: z.boolean(),
+  connectionEnabled: z.boolean(),
+});
+
+export type UpdateLeaderInput = z.infer<typeof updateSchema>;
+
 export async function createLeader(input: CreateLeaderInput): Promise<CreateLeaderResult> {
   await requireRole("admin");
   const parsed = schema.safeParse({ ...input, email: input.email?.trim().toLowerCase(), phone: input.phone?.trim() || undefined, clanId: input.clanId || undefined });
@@ -86,6 +102,130 @@ export async function createAgape(name: string): Promise<{ ok: boolean; message:
 
   revalidatePath("/lideres");
   return { ok: true, message: `Ágape “${parsed.data}” creado. Ahora puedes seleccionarlo.` };
+}
+
+function limaDate() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Lima",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+export async function updateLeader(input: UpdateLeaderInput): Promise<CreateLeaderResult> {
+  await requireRole("admin");
+  const parsed = updateSchema.safeParse({
+    ...input,
+    email: input.email?.trim().toLowerCase() || "",
+    phone: input.phone?.trim() || undefined,
+    clanId: input.clanId || "",
+  });
+  if (!parsed.success) return { ok: false, message: "Revisa los datos del líder." };
+
+  const data = parsed.data;
+  const admin = createAdminClient();
+  const email = data.email || null;
+  const fullName = `${data.firstName} ${data.lastName}`.trim();
+
+  const { data: leader, error: leaderError } = await admin
+    .from("leaders")
+    .select("id, profile_id")
+    .eq("id", data.id)
+    .maybeSingle();
+  if (leaderError || !leader) return { ok: false, message: "No se encontró el líder." };
+
+  if (email) {
+    const { data: duplicate } = await admin
+      .from("leaders")
+      .select("id")
+      .ilike("email", email)
+      .neq("id", data.id)
+      .maybeSingle();
+    if (duplicate) return { ok: false, message: "Otro líder ya usa ese correo." };
+  }
+
+  const { error: updateError } = await admin
+    .from("leaders")
+    .update({
+      first_name: data.firstName,
+      last_name: data.lastName,
+      email,
+      phone: data.phone || null,
+      sex: data.sex,
+      status: data.accountEnabled ? "active" : "inactive",
+      connection_enabled: data.connectionEnabled,
+    })
+    .eq("id", data.id);
+  if (updateError) return { ok: false, message: updateError.message };
+
+  if (leader.profile_id) {
+    const { error: profileError } = await admin
+      .from("profiles")
+      .update({ full_name: fullName, email, active: data.accountEnabled })
+      .eq("id", leader.profile_id);
+    if (profileError) return { ok: false, message: profileError.message };
+
+    const { error: authError } = await admin.auth.admin.updateUserById(leader.profile_id, {
+      email: email ?? undefined,
+      user_metadata: { full_name: fullName },
+    });
+    if (authError) return { ok: false, message: authError.message };
+  }
+
+  const today = limaDate();
+  const { data: currentAgapes, error: agapesError } = await admin
+    .from("leader_agape_assignments")
+    .select("id, agape_id, role")
+    .eq("leader_id", data.id)
+    .is("ended_on", null);
+  if (agapesError) return { ok: false, message: agapesError.message };
+
+  const wanted = new Map(data.agapes.map((item) => [item.id, item.role]));
+  const active = currentAgapes ?? [];
+  const keep = new Set<string>();
+  for (const row of active) {
+    const nextRole = wanted.get(row.agape_id);
+    if (nextRole === row.role) {
+      keep.add(row.agape_id);
+      continue;
+    }
+    const { error } = await admin.from("leader_agape_assignments").update({ ended_on: today }).eq("id", row.id);
+    if (error) return { ok: false, message: error.message };
+  }
+
+  const inserts = data.agapes
+    .filter((item) => !keep.has(item.id))
+    .map((item) => ({ leader_id: data.id, agape_id: item.id, role: item.role }));
+  if (inserts.length) {
+    const { error } = await admin.from("leader_agape_assignments").insert(inserts);
+    if (error) return { ok: false, message: error.message };
+  }
+
+  const { data: currentClan, error: clanError } = await admin
+    .from("leader_clan_memberships")
+    .select("id, clan_id")
+    .eq("leader_id", data.id)
+    .is("ended_on", null)
+    .maybeSingle();
+  if (clanError) return { ok: false, message: clanError.message };
+
+  const nextClan = data.clanId || null;
+  if ((currentClan?.clan_id ?? null) !== nextClan) {
+    if (currentClan) {
+      const { error } = await admin.from("leader_clan_memberships").update({ ended_on: today }).eq("id", currentClan.id);
+      if (error) return { ok: false, message: error.message };
+    }
+    if (nextClan) {
+      const { error } = await admin.from("leader_clan_memberships").insert({ leader_id: data.id, clan_id: nextClan });
+      if (error) return { ok: false, message: error.message };
+    }
+  }
+
+  revalidatePath("/lideres");
+  revalidatePath("/inicio");
+  revalidatePath("/conexion");
+  return { ok: true, message: "Líder actualizado." };
 }
 
 export async function setLeaderConnectionAccess(
