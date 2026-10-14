@@ -36,6 +36,29 @@ const updateSchema = z.object({
 
 export type UpdateLeaderInput = z.infer<typeof updateSchema>;
 
+async function ensureProfile(
+  admin: ReturnType<typeof createAdminClient>,
+  profile: { id: string; email: string | null; fullName: string; active: boolean },
+) {
+  let lastError: string | null = null;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const { data, error } = await admin
+      .from("profiles")
+      .upsert(
+        { id: profile.id, email: profile.email, full_name: profile.fullName, active: profile.active },
+        { onConflict: "id" },
+      )
+      .select("id")
+      .single();
+
+    if (!error && data?.id === profile.id) return null;
+    lastError = error?.message ?? "No se pudo confirmar el perfil de acceso.";
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+
+  return lastError ?? "No se pudo confirmar el perfil de acceso.";
+}
+
 export async function createLeader(input: CreateLeaderInput): Promise<CreateLeaderResult> {
   await requireRole("admin");
   const parsed = schema.safeParse({ ...input, email: input.email?.trim().toLowerCase(), phone: input.phone?.trim() || undefined, clanId: input.clanId || undefined });
@@ -55,6 +78,17 @@ export async function createLeader(input: CreateLeaderInput): Promise<CreateLead
   if (accountError || !account.user) return { ok: false, message: accountError?.message ?? "No se pudo crear la cuenta." };
 
   const removeAccount = () => admin.auth.admin.deleteUser(account.user.id);
+  const profileError = await ensureProfile(admin, {
+    id: account.user.id,
+    email: data.email,
+    fullName: `${data.firstName} ${data.lastName}`.trim(),
+    active: true,
+  });
+  if (profileError) {
+    await removeAccount();
+    return { ok: false, message: profileError };
+  }
+
   const { data: leader, error: leaderError } = await admin.from("leaders").insert({
     profile_id: account.user.id, first_name: data.firstName, last_name: data.lastName,
     email: data.email, phone: data.phone || null, sex: data.sex, status: "active",
@@ -189,12 +223,15 @@ export async function updateLeader(input: UpdateLeaderInput): Promise<CreateLead
     }
 
     const removeAccount = () => admin.auth.admin.deleteUser(account.user.id);
-    const { error: profileError } = await admin
-      .from("profiles")
-      .upsert({ id: account.user.id, full_name: fullName, email, active: data.accountEnabled }, { onConflict: "id" });
+    const profileError = await ensureProfile(admin, {
+      id: account.user.id,
+      email,
+      fullName,
+      active: data.accountEnabled,
+    });
     if (profileError) {
       await removeAccount();
-      return { ok: false, message: profileError.message };
+      return { ok: false, message: profileError };
     }
 
     const { error: linkError } = await admin
