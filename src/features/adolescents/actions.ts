@@ -107,3 +107,18 @@ export async function reviewAdolescent(adolescentId: string, approve: boolean, r
   revalidatePath("/inicio");
   return { ok: true, message: approve ? "Adolescente aprobado." : "Adolescente rechazado." };
 }
+
+export async function deleteAdolescent(adolescentId: string): Promise<{ ok: boolean; message: string }> {
+  await requireRole("admin");
+  if (!z.uuid().safeParse(adolescentId).success) return { ok: false, message: "Registro no válido." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("adolescents").delete().eq("id", adolescentId);
+  if (error) return { ok: false, message: "No se pudo eliminar el adolescente." };
+  revalidatePath("/adolescentes");
+  revalidatePath("/asistencia");
+  revalidatePath("/reuniones");
+  revalidatePath("/inicio");
+  revalidatePath("/reportes");
+  revalidatePath("/conexion");
+  return { ok: true, message: "Adolescente y sus datos asociados eliminados." };
+}
