@@ -2223,6 +2223,23 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_adolescent_profile: {
+        Args: {
+          p_adolescent_id: string
+          p_first_name: string
+          p_last_name: string
+          p_sex: Database["public"]["Enums"]["sex_type"]
+          p_birth_date: string | null
+          p_phone: string | null
+          p_school_name: string | null
+          p_agape_id: string
+          p_clan_id: string
+          p_guardian_name: string | null
+          p_guardian_phone: string | null
+          p_guardian_relationship_id: string | null
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       event_approval_status: "pending" | "published" | "rejected"

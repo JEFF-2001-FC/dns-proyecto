@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Check, Search, UserPlus } from "lucide-react";
 import { saveAttendance } from "../actions";
 import {
@@ -40,7 +39,6 @@ export function AttendanceSheet({
   editable,
   readOnlyReason,
 }: Props) {
-  const router = useRouter();
   const [people, setPeople] = useState<RosterItem[]>(roster);
   const [marks, setMarks] = useState<Record<string, AttendanceStatus>>(() =>
     Object.fromEntries(roster.map((r) => [r.id, r.attendance ?? "present"])),
@@ -140,8 +138,6 @@ export function AttendanceSheet({
       setFeedback({ ok: res.ok, text: res.message });
       if (res.ok) {
         setDirty(false);
-        window.alert("Guardado exitoso.");
-        router.push("/inicio");
       }
     });
 
@@ -350,6 +346,7 @@ export function AttendanceSheet({
                 `Tarde ${totals.late}, falta ${totals.absent}, justificado ${totals.justified}${dirty ? ". Sin guardar" : ""}`
               )}
             </p>
+            {feedback?.ok && <a href="/reuniones" className="font-semibold text-emerald-700 underline">Ver historial de reuniones</a>}
           </div>
           <button
             type="button"

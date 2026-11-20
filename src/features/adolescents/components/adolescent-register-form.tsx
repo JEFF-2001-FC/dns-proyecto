@@ -28,7 +28,10 @@ export function AdolescentRegisterForm({
     startTransition(async () => {
       const result = await registerAdolescent(Object.fromEntries(new FormData(form)));
       setMessage({ ok: result.ok, text: result.message });
-      if (result.ok) form.reset();
+      if (result.ok) {
+        form.reset();
+        window.location.assign("/adolescentes");
+      }
     });
   }
 

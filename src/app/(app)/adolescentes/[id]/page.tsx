@@ -4,6 +4,7 @@ import { Field, Input as UiInput } from "@/components/ui/input";
 import { requireUser } from "@/lib/auth/require-user";
 import { createClient } from "@/lib/supabase/server";
 import { addLifeEvent, saveLifeProfile } from "@/features/adolescents/life-actions";
+import { SaveLifeProfileButton } from "@/features/adolescents/components/save-life-profile-button";
 
 export const metadata = { title: "Ficha del adolescente · DNS" };
 
@@ -110,9 +111,7 @@ export default async function Ficha({ params }: { params: Promise<{ id: string }
           </span>
         </label>
 
-        <button className="rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white hover:bg-ink-soft">
-          Guardar ficha
-        </button>
+        <SaveLifeProfileButton />
       </form>
 
       <section className="rounded-3xl border border-line bg-white p-5">
